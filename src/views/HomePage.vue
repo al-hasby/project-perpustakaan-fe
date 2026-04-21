@@ -1,46 +1,153 @@
 <template>
-  <div class="home-page">
-    <h1>Selamat Datang di Perpustakaan Sekolah Harapan Bangsa</h1>
-    <p>Temukan dan pinjam buku favoritmu dengan mudah!</p>
-    <div class="home-buttons">
-      <router-link to="/buku" class="btn">Daftar Buku</router-link>
-      <router-link to="/peminjaman" class="btn">Peminjaman</router-link>
-      <router-link to="/kontak" class="btn">Kontak</router-link>
-      <router-link to="/login" class="btn">Login</router-link>
+  <div class="dashboard">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2>📚 PerpusApp</h2>
+      <ul>
+        <li class="active">Management Siswa</li>
+        <li>Data Buku</li>
+        <li>Peminjaman</li>
+        <li>Logout</li>
+      </ul>
     </div>
+
+    <!-- Main -->
+    <div class="main">
+      <h1>Management Siswa</h1>
+      <p>Kelola data siswa dengan mudah</p>
+
+      <!-- Form -->
+      <div class="form">
+        <input v-model="nama" placeholder="Nama siswa" />
+        <input v-model="kelas" placeholder="Kelas" />
+        <button @click="tambahSiswa">Tambah</button>
+      </div>
+
+      <!-- Table -->
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>Kelas</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(s, i) in siswa" :key="i">
+            <td>{{ i + 1 }}</td>
+            <td>{{ s.nama }}</td>
+            <td>{{ s.kelas }}</td>
+            <td>
+              <button class="hapus" @click="hapusSiswa(i)">Hapus</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
   </div>
 </template>
 
+<script setup>
+import { ref } from 'vue'
+
+const siswa = ref([
+  { nama: 'Andi', kelas: 'X RPL 1' },
+  { nama: 'Budi', kelas: 'X RPL 2' }
+])
+
+const nama = ref('')
+const kelas = ref('')
+
+const tambahSiswa = () => {
+  if (!nama.value || !kelas.value) return
+  siswa.value.push({
+    nama: nama.value,
+    kelas: kelas.value
+  })
+  nama.value = ''
+  kelas.value = ''
+}
+
+const hapusSiswa = (i) => {
+  siswa.value.splice(i, 1)
+}
+</script>
+
 <style scoped>
-.home-page {
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: #020202;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  text-align: center;
-}
-.home-buttons {
-  margin-top: 2rem;
+.dashboard {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
+  height: 100vh;
+  background: #f4f6f9;
 }
-.btn {
-  display: inline-block;
-  padding: 0.7rem 1.5rem;
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
   background: #2c3e50;
-  color: #fff;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 1rem;
-  transition: background 0.2s;
+  color: white;
+  padding: 20px;
 }
-.btn:hover {
-  background: #ffd700;
-  color: #2c3e50;
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.sidebar li.active {
+  background: #34495e;
+  border-radius: 6px;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* Form */
+.form {
+  margin: 20px 0;
+}
+
+.form input {
+  padding: 8px;
+  margin-right: 10px;
+}
+
+.form button {
+  padding: 8px 12px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+/* Table */
+table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.hapus {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
 }
 </style>

@@ -55,8 +55,11 @@ async function login() {
 
 <style scoped>
 .login-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   max-width: 350px;
-  margin: 3rem auto;
   padding: 2rem;
   background: #fff;
   border-radius: 12px;
