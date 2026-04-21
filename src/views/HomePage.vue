@@ -5,10 +5,18 @@
     <div class="sidebar">
       <h2>📚 PerpusApp</h2>
       <ul>
-        <li class="active">Management Siswa</li>
-        <li>Data Buku</li>
-        <li>Peminjaman</li>
-        <li>Logout</li>
+        <li>
+          <router-link to="/" class="menu active">Management Siswa</router-link>
+        </li>
+        <li>
+          <router-link to="/buku" class="menu">Data Buku</router-link>
+        </li>
+        <li>
+          <router-link to="/peminjaman" class="menu">Peminjaman</router-link>
+        </li>
+        <li>
+          <router-link to="/login" class="menu">Logout</router-link>
+        </li>
       </ul>
     </div>
 
@@ -81,6 +89,7 @@ const hapusSiswa = (i) => {
 .dashboard {
   display: flex;
   height: 100vh;
+  width: 100%;
   background: #f4f6f9;
 }
 
@@ -97,14 +106,20 @@ const hapusSiswa = (i) => {
   padding: 0;
 }
 
-.sidebar li {
+.menu {
+  display: block;
+  color: white;
+  text-decoration: none;
   padding: 10px;
-  margin-top: 10px;
+  border-radius: 6px;
 }
 
-.sidebar li.active {
+.menu:hover {
   background: #34495e;
-  border-radius: 6px;
+}
+
+.menu.active {
+  background: #34495e;
 }
 
 /* Main */
@@ -139,6 +154,7 @@ table {
 }
 
 th, td {
+  text-align: center;
   padding: 10px;
   border-bottom: 1px solid #ddd;
 }
