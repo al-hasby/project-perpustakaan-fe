@@ -3,10 +3,10 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-      <h2>📚 PerpusApp</h2>
+      <h1>📚 BookNest</h1>
       <ul>
         <li>
-          <router-link to="/" class="menu active">Management Siswa</router-link>
+          <router-link to="/" class="menu">Management Siswa</router-link>
         </li>
         <li>
           <router-link to="/buku" class="menu">Data Buku</router-link>
@@ -63,8 +63,13 @@
 import { ref } from 'vue'
 
 const siswa = ref([
-  { nama: 'Andi', kelas: 'X RPL 1' },
-  { nama: 'Budi', kelas: 'X RPL 2' }
+  { nama: 'Aqil', kelas: 'XI PPLG 3' },
+  { nama: 'Al', kelas: 'XI PPLG 3' },
+  { nama: 'Ridho', kelas: 'XI PPLG 3' },
+  { nama: 'Novita', kelas: 'XI PPLG 3' },
+  { nama: 'Alya', kelas: 'XI PPLG 3' },
+  { nama: 'Alifah', kelas: 'XI PPLG 3' },
+  { nama: 'Tasya', kelas: 'XI PPLG 3' }
 ])
 
 const nama = ref('')
@@ -91,6 +96,7 @@ const hapusSiswa = (i) => {
   height: 100vh;
   width: 100%;
   background: #f4f6f9;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* Sidebar */
@@ -111,7 +117,7 @@ const hapusSiswa = (i) => {
   color: white;
   text-decoration: none;
   padding: 10px;
-  border-radius: 6px;
+  cursor: pointer;
 }
 
 .menu:hover {
@@ -144,6 +150,12 @@ const hapusSiswa = (i) => {
   color: white;
   border: none;
   border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3ms;
+}
+
+.form button:hover {
+  background-color: #219150;
 }
 
 /* Table */
@@ -165,5 +177,17 @@ th, td {
   border: none;
   padding: 5px 10px;
   border-radius: 4px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.hapus:hover {
+  background-color: #c0392b;
+}
+
+@media (max-width: 600px) {
+  .form-input {
+    flex-direction: column;
+  }
 }
 </style>
