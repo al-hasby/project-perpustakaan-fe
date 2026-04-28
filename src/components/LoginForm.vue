@@ -48,7 +48,7 @@ async function login() {
         <input id="password" v-model="password" type="password" placeholder="Masukkan password" />
       </div>
       <div v-if="error" class="error">{{ error }}</div>
-      <button type="submit"><router-link to="/" class="text-login">Login</router-link></button>
+      <router-link to="/" class="text-login"><button type="submit">Login</button></router-link>
     </form>
   </div>
 </template>
