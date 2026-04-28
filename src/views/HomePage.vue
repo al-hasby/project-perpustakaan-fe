@@ -99,7 +99,6 @@ const hapusSiswa = (i) => {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Sidebar */
 .sidebar {
   width: 220px;
   background: #2c3e50;
@@ -128,13 +127,11 @@ const hapusSiswa = (i) => {
   background: #34495e;
 }
 
-/* Main */
 .main {
   flex: 1;
   padding: 20px;
 }
 
-/* Form */
 .form {
   margin: 20px 0;
 }
@@ -158,7 +155,6 @@ const hapusSiswa = (i) => {
   background-color: #219150;
 }
 
-/* Table */
 table {
   width: 100%;
   background: white;
@@ -185,9 +181,4 @@ th, td {
   background-color: #c0392b;
 }
 
-@media (max-width: 600px) {
-  .form-input {
-    flex-direction: column;
-  }
-}
 </style>
