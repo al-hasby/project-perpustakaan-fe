@@ -1,11 +1,16 @@
 <template>
-  <router-view />
+  <Navbar />
+  <main class="app-shell">
+    <router-view />
+  </main>
 </template>
 
 <script setup>
-// Tidak perlu import apapun di sini
+import Navbar from '@/components/Navbar.vue'
 </script>
 
 <style scoped>
-/* Kosongkan style jika tidak diperlukan */
+.app-shell {
+  min-height: calc(100vh - 64px);
+}
 </style>
