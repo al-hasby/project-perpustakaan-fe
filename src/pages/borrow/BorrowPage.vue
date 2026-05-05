@@ -1,5 +1,7 @@
 <template>
   <section class="page">
+    <SuccessPopup :message="success" @close="success = ''" />
+
     <div class="page-header">
       <div>
         <p class="eyebrow">TASK-002</p>
@@ -14,10 +16,14 @@
       </div>
     </div>
 
-    <div class="mini-summary">
+    <div class="mini-summary borrow-summary">
       <article>
         <span>Total Pinjam</span>
         <strong>{{ visibleBorrows.length }}</strong>
+      </article>
+      <article>
+        <span>Menunggu Admin</span>
+        <strong>{{ pendingCount }}</strong>
       </article>
       <article>
         <span>Masih Dipinjam</span>
@@ -37,13 +43,21 @@
         <h2>Daftar Peminjaman</h2>
         <select v-model="statusFilter" class="compact-select">
           <option value="all">Semua status</option>
+          <option value="pending">Menunggu admin</option>
           <option value="active">Masih dipinjam</option>
           <option value="returned">Sudah kembali</option>
+          <option value="rejected">Ditolak</option>
         </select>
       </div>
-      <p v-if="success" class="alert success">{{ success }}</p>
       <p v-if="error" class="alert error">{{ error }}</p>
-      <BorrowTable :borrows="filteredBorrows" :can-return="auth.canReturnBooks" @return="selectedBorrow = $event" />
+      <BorrowTable
+        :borrows="filteredBorrows"
+        :can-approve="auth.isAdmin"
+        :can-return="auth.canReturnBooks"
+        @approve="approveSelectedBorrow"
+        @reject="rejectSelectedBorrow"
+        @return="selectedBorrow = $event"
+      />
       <div v-if="!filteredBorrows.length" class="empty-state inline-empty">
         <h2>Belum ada data peminjaman</h2>
         <p>{{ auth.isMember ? 'Pinjam buku dari halaman Buku.' : 'Tambahkan peminjaman lewat form di atas.' }}</p>
@@ -54,11 +68,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { createBorrow, fetchBorrows, returnBorrow } from '@/api/borrow.js'
+import { approveBorrow, createBorrow, fetchBorrows, rejectBorrow, returnBorrow } from '@/api/borrow.js'
 import { useAuthStore } from '@/stores/auth.js'
 import BorrowForm from '@/components/borrow/BorrowForm.vue'
 import BorrowTable from '@/components/borrow/BorrowTable.vue'
 import ReturnForm from '@/components/borrow/ReturnForm.vue'
+import SuccessPopup from '@/components/SuccessPopup.vue'
 
 const auth = useAuthStore()
 const borrows = ref([])
@@ -77,17 +92,28 @@ const visibleBorrows = computed(() => {
 
 const filteredBorrows = computed(() => {
   if (statusFilter.value === 'active') {
-    return visibleBorrows.value.filter((borrow) => !borrow.returned_at)
+    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'approved' && !borrow.returned_at)
   }
 
   if (statusFilter.value === 'returned') {
     return visibleBorrows.value.filter((borrow) => borrow.returned_at)
   }
 
+  if (statusFilter.value === 'pending') {
+    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'pending')
+  }
+
+  if (statusFilter.value === 'rejected') {
+    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'rejected')
+  }
+
   return visibleBorrows.value
 })
 
-const activeCount = computed(() => visibleBorrows.value.filter((borrow) => !borrow.returned_at).length)
+const pendingCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.approval_status === 'pending').length)
+const activeCount = computed(() => {
+  return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'approved' && !borrow.returned_at).length
+})
 const returnedCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.returned_at).length)
 
 async function loadBorrows() {
@@ -100,8 +126,30 @@ async function loadBorrows() {
 
 async function saveBorrow(payload) {
   try {
-    await createBorrow(payload)
+    await createBorrow({ ...payload, approval_status: 'approved' })
     success.value = 'Peminjaman berhasil disimpan.'
+    error.value = ''
+    await loadBorrows()
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
+async function approveSelectedBorrow(borrow) {
+  try {
+    await approveBorrow(borrow.id)
+    success.value = 'Peminjaman berhasil disetujui.'
+    error.value = ''
+    await loadBorrows()
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
+async function rejectSelectedBorrow(borrow) {
+  try {
+    await rejectBorrow(borrow.id)
+    success.value = 'Peminjaman berhasil ditolak.'
     error.value = ''
     await loadBorrows()
   } catch (err) {

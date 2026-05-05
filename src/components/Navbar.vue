@@ -6,10 +6,10 @@
     </RouterLink>
 
     <nav class="nav-links">
-      <RouterLink to="/books">Buku</RouterLink>
-      <RouterLink v-if="auth.isAuthenticated" to="/borrow">Peminjaman</RouterLink>
-      <RouterLink v-if="auth.role === 'member'" to="/ebooks">E-Book</RouterLink>
-      <RouterLink v-if="auth.isAdmin" to="/report">Laporan</RouterLink>
+      <RouterLink class="nav-item" to="/books">Buku</RouterLink>
+      <RouterLink v-if="auth.isAuthenticated" class="nav-item" to="/borrow">Peminjaman</RouterLink>
+      <RouterLink v-if="auth.role === 'member'" class="nav-item" to="/ebooks">E-Book</RouterLink>
+      <RouterLink v-if="auth.isAdmin" class="nav-item" to="/report">Laporan</RouterLink>
     </nav>
 
     <div class="nav-actions">

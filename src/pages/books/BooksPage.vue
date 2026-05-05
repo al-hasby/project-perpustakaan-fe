@@ -1,5 +1,7 @@
 <template>
   <section class="page">
+    <SuccessPopup :message="success" @close="success = ''" />
+
     <div class="page-header">
       <div>
         <p class="eyebrow">TASK-001</p>
@@ -99,7 +101,6 @@
               <dd>{{ detailBook.stock }} buku</dd>
             </div>
           </dl>
-          <p v-if="success" class="alert success">{{ success }}</p>
           <p v-if="error" class="alert error">{{ error }}</p>
           <div class="detail-actions">
             <button
@@ -138,6 +139,7 @@ import { addBook, deleteBook, fetchBooks, updateBook } from '@/api/books.js'
 import { useAuthStore } from '@/stores/auth.js'
 import BookForm from '@/components/books/BookForm.vue'
 import BookTable from '@/components/books/BookTable.vue'
+import SuccessPopup from '@/components/SuccessPopup.vue'
 
 const auth = useAuthStore()
 const books = ref([])
@@ -220,11 +222,15 @@ function closeForm() {
 
 async function saveBook(payload) {
   try {
+    const isEdit = Boolean(selectedBook.value?.id)
+
     if (selectedBook.value?.id) {
       await updateBook(selectedBook.value.id, payload)
     } else {
       await addBook(payload)
     }
+    success.value = isEdit ? 'Buku berhasil diperbarui.' : 'Buku berhasil ditambahkan.'
+    error.value = ''
     closeForm()
     await loadBooks()
   } catch (err) {
@@ -237,6 +243,8 @@ async function removeBook(book) {
 
   try {
     await deleteBook(book.id)
+    success.value = 'Buku berhasil dihapus.'
+    error.value = ''
     await loadBooks()
   } catch (err) {
     error.value = err.message
@@ -263,9 +271,10 @@ async function borrowSelectedBook() {
       member_id: auth.user?.id || null,
       borrow_date: borrowDate.toISOString().slice(0, 10),
       due_date: dueDate.toISOString().slice(0, 10),
+      approval_status: 'pending',
     })
 
-    success.value = 'Buku berhasil dipinjam. Batas pengembalian 7 hari.'
+    success.value = 'Permintaan peminjaman dikirim. Tunggu persetujuan admin.'
     await loadBooks()
     detailBook.value = books.value.find((book) => Number(book.id) === Number(detailBook.value.id))
   } catch (err) {

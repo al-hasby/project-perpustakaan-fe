@@ -66,6 +66,7 @@ p {
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
 .brand,
@@ -82,7 +83,19 @@ p {
 }
 
 .brand {
+  border-radius: 8px;
+  padding: 0.25rem 0.35rem 0.25rem 0.25rem;
   font-weight: 800;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.brand:hover {
+  color: var(--primary-dark);
+  background: #eef4ff;
+  transform: translateY(-1px);
 }
 
 .brand-mark {
@@ -94,16 +107,58 @@ p {
   color: #fff;
   background: var(--primary);
   font-weight: 900;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
 }
 
 .nav-links {
+  justify-content: center;
   flex-wrap: wrap;
   color: var(--muted);
   font-weight: 700;
 }
 
-.router-link-active {
+.nav-item {
+  position: relative;
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  color: var(--muted);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.nav-item:hover {
+  color: var(--primary-dark);
+  background: #eef4ff;
+  transform: translateY(-1px);
+}
+
+.nav-item::after {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.28rem;
+  left: 0.75rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--primary);
+  content: '';
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.nav-item.router-link-active {
   color: var(--primary);
+  background: #eef4ff;
+}
+
+.nav-item.router-link-active::after,
+.nav-item:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .role-badge,
@@ -122,6 +177,14 @@ p {
   border-radius: 8px;
   padding: 0.38rem 0.65rem;
   background: #fff;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.user-badge:hover {
+  border-color: #b8c7e1;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .user-badge strong {
@@ -151,6 +214,16 @@ p {
 .status.warning {
   background: #fef3c7;
   color: var(--warning);
+}
+
+.status.primary {
+  background: #dbeafe;
+  color: var(--primary-dark);
+}
+
+.status.danger {
+  background: #fee2e2;
+  color: var(--danger);
 }
 
 .btn {
@@ -184,6 +257,12 @@ p {
   border-color: var(--line);
   color: var(--text);
   background: #fff;
+}
+
+.btn.ghost:hover {
+  border-color: #b8c7e1;
+  color: var(--primary-dark);
+  background: #f8fbff;
 }
 
 .btn.danger {
@@ -470,6 +549,10 @@ p {
   margin-top: 0.25rem;
   font-size: 2rem;
   font-weight: 900;
+}
+
+.borrow-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .catalog-toolbar {
