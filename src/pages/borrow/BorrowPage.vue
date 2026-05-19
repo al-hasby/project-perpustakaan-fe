@@ -35,7 +35,7 @@
       </article>
     </div>
 
-    <BorrowForm v-if="!auth.isMember" @submit="saveBorrow" />
+    <BorrowForm v-if="!auth.isMember" :books="books" @submit="saveBorrow" />
     <ReturnForm v-if="!auth.isMember" :borrow="selectedBorrow" @submit="confirmReturn" />
 
     <div class="panel">
@@ -68,6 +68,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { fetchBooks } from '@/api/books.js'
 import { approveBorrow, createBorrow, fetchBorrows, rejectBorrow, returnBorrow } from '@/api/borrow.js'
 import { useAuthStore } from '@/stores/auth.js'
 import BorrowForm from '@/components/borrow/BorrowForm.vue'
@@ -77,6 +78,7 @@ import SuccessPopup from '@/components/SuccessPopup.vue'
 
 const auth = useAuthStore()
 const borrows = ref([])
+const books = ref([])
 const selectedBorrow = ref(null)
 const statusFilter = ref('all')
 const error = ref('')
@@ -86,17 +88,17 @@ const visibleBorrows = computed(() => {
   if (!auth.isMember) return borrows.value
 
   return borrows.value.filter((borrow) => {
-    return Number(borrow.member_id) === Number(auth.user?.id) || borrow.borrower_name === auth.user?.name
+    return String(borrow.member_id) === String(auth.user?.id) || borrow.borrower_name === auth.user?.name
   })
 })
 
 const filteredBorrows = computed(() => {
   if (statusFilter.value === 'active') {
-    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'approved' && !borrow.returned_at)
+    return visibleBorrows.value.filter((borrow) => ['dipinjam', 'terlambat'].includes(borrow.status) && !borrow.returned_at)
   }
 
   if (statusFilter.value === 'returned') {
-    return visibleBorrows.value.filter((borrow) => borrow.returned_at)
+    return visibleBorrows.value.filter((borrow) => borrow.status === 'dikembalikan' || borrow.returned_at)
   }
 
   if (statusFilter.value === 'pending') {
@@ -112,13 +114,15 @@ const filteredBorrows = computed(() => {
 
 const pendingCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.approval_status === 'pending').length)
 const activeCount = computed(() => {
-  return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'approved' && !borrow.returned_at).length
+  return visibleBorrows.value.filter((borrow) => ['dipinjam', 'terlambat'].includes(borrow.status) && !borrow.returned_at).length
 })
-const returnedCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.returned_at).length)
+const returnedCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.status === 'dikembalikan' || borrow.returned_at).length)
 
 async function loadBorrows() {
   try {
-    borrows.value = await fetchBorrows()
+    const [borrowData, bookData] = await Promise.all([fetchBorrows(), fetchBooks()])
+    borrows.value = borrowData
+    books.value = bookData
   } catch (err) {
     error.value = err.message
   }
@@ -126,7 +130,7 @@ async function loadBorrows() {
 
 async function saveBorrow(payload) {
   try {
-    await createBorrow({ ...payload, approval_status: 'approved' })
+    await createBorrow(payload)
     success.value = 'Peminjaman berhasil disimpan.'
     error.value = ''
     await loadBorrows()
@@ -137,7 +141,7 @@ async function saveBorrow(payload) {
 
 async function approveSelectedBorrow(borrow) {
   try {
-    await approveBorrow(borrow.id)
+    await approveBorrow(borrow.id, borrow.book_condition || 'aman')
     success.value = 'Peminjaman berhasil disetujui.'
     error.value = ''
     await loadBorrows()
@@ -157,11 +161,11 @@ async function rejectSelectedBorrow(borrow) {
   }
 }
 
-async function confirmReturn() {
+async function confirmReturn(payload) {
   if (!selectedBorrow.value) return
 
   try {
-    await returnBorrow(selectedBorrow.value.id)
+    await returnBorrow(selectedBorrow.value.id, payload.returned_at, payload.book_condition)
     success.value = 'Pengembalian berhasil diproses.'
     error.value = ''
     selectedBorrow.value = null

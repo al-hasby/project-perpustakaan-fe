@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: (state) => Boolean(state.token),
     isAdmin: (state) => state.role === 'admin',
     isPetugas: (state) => state.role === 'petugas',
-    isMember: (state) => state.role === 'member',
+    isMember: (state) => ['member', 'user'].includes(state.role),
     canReturnBooks: (state) => ['admin', 'petugas'].includes(state.role),
   },
   actions: {
@@ -32,4 +32,3 @@ export const useAuthStore = defineStore('auth', {
     },
   },
 })
-

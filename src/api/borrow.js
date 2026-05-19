@@ -1,199 +1,79 @@
 import { get, post, put, del, unwrapList } from './index.js'
-import { getDummyBooks, saveDummyBooks } from './books.js'
-
-const DUMMY_BORROWS_KEY = 'dummy_borrows'
 
 export async function fetchBorrows() {
-  try {
-    const borrows = unwrapList(await get('/borrow'), ['borrows', 'borrow'])
-    return borrows.length ? borrows.map(normalizeBorrow) : getDummyBorrows()
-  } catch {
-    return getDummyBorrows()
-  }
+  const borrows = unwrapList(await get('/borrow'), ['borrows', 'borrow'])
+  return borrows.map(normalizeBorrow)
 }
 
 export async function createBorrow(borrowData) {
-  try {
-    return await post('/borrow', borrowData)
-  } catch {
-    const books = getDummyBooks()
-    const book = books.find((item) => Number(item.id) === Number(borrowData.book_id))
+  const payload = toBackendBorrow(borrowData)
 
-    if (!book) {
-      throw new Error('Buku tidak ditemukan')
-    }
-
-    if (Number(book.stock) <= 0) {
-      throw new Error('Stok buku habis')
-    }
-
-    const borrows = getDummyBorrows()
-    const approvalStatus = borrowData.approval_status || (borrowData.member_id ? 'pending' : 'approved')
-    const nextBorrow = {
-      id: getNextId(borrows),
-      book_id: book.id,
-      book_title: book.title,
-      borrower_name: borrowData.borrower_name,
-      member_id: borrowData.member_id || null,
-      borrow_date: borrowData.borrow_date,
-      due_date: borrowData.due_date,
-      approval_status: approvalStatus,
-      approved_at: approvalStatus === 'approved' ? new Date().toISOString().slice(0, 10) : null,
-      returned_at: null,
-      book,
-    }
-
-    saveDummyBorrows([...borrows, nextBorrow])
-
-    if (approvalStatus === 'approved') {
-      saveDummyBooks(decreaseBookStock(books, book.id))
-    }
-
-    return nextBorrow
-  }
+  return normalizeBorrow(await post('/borrow', payload))
 }
 
-export async function approveBorrow(id) {
-  try {
-    return await put(`/borrow/${id}/approve`, {})
-  } catch {
-    const borrows = getDummyBorrows()
-    const borrow = borrows.find((item) => Number(item.id) === Number(id))
-
-    if (!borrow || borrow.approval_status === 'approved') {
-      return borrow || { success: true }
-    }
-
-    if (borrow.approval_status === 'rejected') {
-      throw new Error('Peminjaman sudah ditolak')
-    }
-
-    const books = getDummyBooks()
-    const book = books.find((item) => Number(item.id) === Number(borrow.book_id))
-
-    if (!book) {
-      throw new Error('Buku tidak ditemukan')
-    }
-
-    if (Number(book.stock) <= 0) {
-      throw new Error('Stok buku habis')
-    }
-
-    const approvedBorrow = {
-      ...borrow,
-      approval_status: 'approved',
-      approved_at: new Date().toISOString().slice(0, 10),
-    }
-
-    saveDummyBorrows(borrows.map((item) => (Number(item.id) === Number(id) ? approvedBorrow : item)))
-    saveDummyBooks(decreaseBookStock(books, book.id))
-
-    return approvedBorrow
-  }
+export async function approveBorrow(id, bookCondition = 'aman') {
+  return normalizeBorrow(
+    await put(`/borrow/${id}/approve`, {
+      kondisi_buku: normalizeBookCondition(bookCondition),
+    }),
+  )
 }
 
 export async function rejectBorrow(id) {
-  try {
-    return await put(`/borrow/${id}/reject`, {})
-  } catch {
-    const borrows = getDummyBorrows()
-    const borrow = borrows.find((item) => Number(item.id) === Number(id))
-
-    if (!borrow || borrow.approval_status === 'rejected') {
-      return borrow || { success: true }
-    }
-
-    if (borrow.approval_status === 'approved') {
-      throw new Error('Peminjaman yang sudah disetujui tidak bisa ditolak')
-    }
-
-    const rejectedBorrow = {
-      ...borrow,
-      approval_status: 'rejected',
-      rejected_at: new Date().toISOString().slice(0, 10),
-    }
-
-    saveDummyBorrows(borrows.map((item) => (Number(item.id) === Number(id) ? rejectedBorrow : item)))
-
-    return rejectedBorrow
-  }
+  return normalizeBorrow(await put(`/borrow/${id}/reject`, {}))
 }
 
-export async function returnBorrow(id) {
-  try {
-    return await put(`/return/${id}`, {})
-  } catch {
-    const borrows = getDummyBorrows()
-    const borrow = borrows.find((item) => Number(item.id) === Number(id))
-
-    if (!borrow || borrow.returned_at) {
-      return borrow || { success: true }
-    }
-
-    if (borrow.approval_status === 'pending') {
-      throw new Error('Peminjaman belum disetujui admin')
-    }
-
-    if (borrow.approval_status === 'rejected') {
-      throw new Error('Peminjaman sudah ditolak')
-    }
-
-    const returnedBorrow = { ...borrow, returned_at: new Date().toISOString().slice(0, 10) }
-    saveDummyBorrows(borrows.map((item) => (Number(item.id) === Number(id) ? returnedBorrow : item)))
-
-    const books = getDummyBooks()
-    saveDummyBooks(
-      books.map((book) =>
-        Number(book.id) === Number(borrow.book_id) ? { ...book, stock: Number(book.stock) + 1 } : book,
-      ),
-    )
-
-    return returnedBorrow
+export async function returnBorrow(id, returnedAt = new Date().toISOString().slice(0, 10), bookCondition = 'aman') {
+  const payload = {
+    dikembalikan_pada: returnedAt,
+    kondisi_buku: normalizeBookCondition(bookCondition),
   }
+
+  return normalizeBorrow(await put(`/borrow/${id}/return`, payload))
 }
 
 export async function deleteBorrow(id) {
-  try {
-    return await del(`/borrow/${id}`)
-  } catch {
-    saveDummyBorrows(getDummyBorrows().filter((borrow) => Number(borrow.id) !== Number(id)))
-    return { success: true }
-  }
-}
-
-function getDummyBorrows() {
-  const storedBorrows = localStorage.getItem(DUMMY_BORROWS_KEY)
-
-  if (!storedBorrows) return []
-
-  try {
-    const borrows = JSON.parse(storedBorrows).map(normalizeBorrow)
-    saveDummyBorrows(borrows)
-    return borrows
-  } catch {
-    return []
-  }
-}
-
-function saveDummyBorrows(borrows) {
-  localStorage.setItem(DUMMY_BORROWS_KEY, JSON.stringify(borrows))
-}
-
-function getNextId(items) {
-  return Math.max(0, ...items.map((item) => Number(item.id) || 0)) + 1
+  return await del(`/borrow/${id}`)
 }
 
 function normalizeBorrow(borrow = {}) {
+  const status = borrow.status || borrow.approval_status || borrow.status_persetujuan || 'dipinjam'
+  const approvalStatus = normalizeApprovalStatus(status)
+
   return {
     ...borrow,
-    approval_status: borrow.approval_status || borrow.status_persetujuan || 'approved',
-    approved_at: borrow.approved_at || borrow.tanggal_disetujui || null,
-    rejected_at: borrow.rejected_at || borrow.tanggal_ditolak || null,
+    book_id: borrow.book_id || borrow.id_buku || borrow.book?.id || null,
+    book_title: borrow.book_title || borrow.judul_buku || borrow.book?.title || borrow.book?.judul || '',
+    borrow_date: borrow.borrow_date || borrow.tanggal_pinjam || '',
+    due_date: borrow.due_date || borrow.tanggal_kembali || '',
+    returned_at: borrow.returned_at || borrow.dikembalikan_pada || null,
+    book_condition: normalizeBookCondition(borrow.book_condition || borrow.kondisi_buku || 'aman'),
+    status,
+    approval_status: approvalStatus,
+    approved_at: borrow.approved_at || borrow.disetujui_pada || borrow.tanggal_disetujui || null,
+    rejected_at: borrow.rejected_at || borrow.ditolak_pada || borrow.tanggal_ditolak || null,
   }
 }
 
-function decreaseBookStock(books, bookId) {
-  return books.map((item) =>
-    Number(item.id) === Number(bookId) ? { ...item, stock: Math.max(0, Number(item.stock) - 1) } : item,
-  )
+function normalizeApprovalStatus(status) {
+  if (['menunggu', 'pending'].includes(status)) return 'pending'
+  if (['ditolak', 'rejected'].includes(status)) return 'rejected'
+  return 'approved'
+}
+
+function toBackendBorrow(borrow = {}) {
+  return {
+    borrower_name: borrow.borrower_name || '',
+    id_buku: borrow.id_buku || borrow.book_id || null,
+    tanggal_pinjam: borrow.tanggal_pinjam || borrow.borrow_date || '',
+    tanggal_kembali: borrow.tanggal_kembali || borrow.due_date || '',
+    kondisi_buku: normalizeBookCondition(borrow.kondisi_buku || borrow.book_condition || 'aman'),
+    member_id: borrow.member_id || null,
+  }
+}
+
+function normalizeBookCondition(condition = 'aman') {
+  if (condition === 'buku aman') return 'aman'
+  if (condition === 'sedikit rusak') return 'sedikit_rusak'
+  return ['aman', 'sedikit_rusak', 'rusak'].includes(condition) ? condition : 'aman'
 }

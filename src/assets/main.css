@@ -74,7 +74,6 @@ p {
 .nav-actions,
 .hero-actions,
 .form-actions,
-.dummy-actions,
 .toolbar,
 .viewer-header {
   display: flex;
@@ -201,6 +200,23 @@ p {
   text-transform: capitalize;
 }
 
+.user-badge .avatar {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #eef2ff, #e0e7ff);
+  color: var(--primary-dark);
+  font-weight: 900;
+  margin-right: 0.5rem;
+}
+
+.user-badge .user-info {
+  display: grid;
+  line-height: 1;
+}
+
 .role-badge {
   background: #e8eefc;
   color: var(--primary-dark);
@@ -257,6 +273,11 @@ p {
   border-color: var(--line);
   color: var(--text);
   background: #fff;
+}
+
+.nav-actions .auth-actions {
+  display: inline-flex;
+  gap: 0.5rem;
 }
 
 .btn.ghost:hover {
@@ -647,14 +668,6 @@ th {
   display: grid;
   width: min(460px, 100%);
   gap: 1rem;
-}
-
-.dummy-actions {
-  justify-content: stretch;
-}
-
-.dummy-actions .btn {
-  flex: 1;
 }
 
 .alert {

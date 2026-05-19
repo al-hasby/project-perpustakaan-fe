@@ -12,26 +12,21 @@
       </label>
       <label>
         Email
-        <input v-model="form.email" type="email" placeholder="Opsional untuk akun dummy" />
+        <input v-model="form.email" type="email" placeholder="Email" />
       </label>
       <label>
         Password
-        <input v-model="form.password" type="password" placeholder="Opsional untuk akun dummy" />
+        <input v-model="form.password" type="password" placeholder="Password" />
       </label>
-      <label>
-        Role
-        <select v-model="form.role">
-          <option value="member">Member</option>
-          <option value="petugas">Petugas</option>
-          <option value="admin">Admin</option>
-        </select>
-      </label>
+      <!-- Role diset otomatis ke 'member' untuk pendaftaran publik -->
+      <input type="hidden" v-model="form.role" />
 
       <p v-if="error" class="alert error">{{ error }}</p>
       <button class="btn primary full" type="submit" :disabled="loading">
         {{ loading ? 'Memproses...' : 'Daftar' }}
       </button>
       <RouterLink to="/login">Sudah punya akun? Masuk</RouterLink>
+      <SuccessPopup v-if="successMessage" :message="successMessage" @close="successMessage = ''" />
     </form>
   </section>
 </template>
@@ -40,6 +35,7 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/api/auth.js'
+import SuccessPopup from '@/components/SuccessPopup.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -50,14 +46,19 @@ const form = reactive({
   password: '',
   role: 'member',
 })
+const successMessage = ref('')
 
 async function handleSubmit() {
   loading.value = true
   error.value = ''
 
   try {
-    await register(form)
-    router.push('/')
+    const res = await register(form)
+    successMessage.value = 'Akun berhasil dibuat. Anda sudah masuk.'
+
+    setTimeout(() => {
+      router.push('/')
+    }, 900)
   } catch (err) {
     error.value = err.message
   } finally {

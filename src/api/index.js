@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/auth.js'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 async function request(endpoint, options = {}) {
   const authStore = useAuthStore()
@@ -14,16 +14,22 @@ async function request(endpoint, options = {}) {
     headers.Authorization = `Bearer ${authStore.token}`
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-    body:
-      options.body instanceof FormData || options.body === undefined
-        ? options.body
-        : JSON.stringify(options.body),
-  })
+  let response
 
-  if (response.status === 401 && !authStore.token?.startsWith('dummy-token')) {
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      body:
+        options.body instanceof FormData || options.body === undefined
+          ? options.body
+          : JSON.stringify(options.body),
+    })
+  } catch {
+    throw new Error('Backend tidak bisa dihubungi. Pastikan server Express berjalan di http://localhost:3000.')
+  }
+
+  if (response.status === 401) {
     authStore.clearAuth()
     window.location.href = '/login'
   }
@@ -32,15 +38,22 @@ async function request(endpoint, options = {}) {
   const data = text ? parseJson(text) : null
 
   if (!response.ok) {
-    const message = data?.message || 'Terjadi kesalahan pada server'
+    const devInfo = { status: response.status, statusText: response.statusText, body: text, json: data }
+    if (import.meta.env.DEV) {
+      // Log full response for debugging in development
+      // eslint-disable-next-line no-console
+      console.error('[API ERROR]', endpoint, devInfo)
+    }
+
+    const message = data?.message || data?.error || text || `HTTP ${response.status} ${response.statusText}` || 'Terjadi kesalahan pada server'
     throw new Error(message)
   }
 
   return data
 }
 
-export function get(endpoint) {
-  return request(endpoint)
+export function get(endpoint, params = {}) {
+  return request(withQuery(endpoint, params))
 }
 
 export function post(endpoint, data) {
@@ -66,12 +79,32 @@ export function unwrapList(payload, keys = []) {
   return []
 }
 
+export function resolveApiAssetUrl(path) {
+  if (!path || path.startsWith('http') || path.startsWith('blob:')) return path || ''
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${API_BASE_URL}${normalizedPath}`
+}
+
 function parseJson(text) {
   try {
     return JSON.parse(text)
   } catch {
     return { message: text }
   }
+}
+
+function withQuery(endpoint, params = {}) {
+  const query = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.set(key, value)
+    }
+  })
+
+  const queryString = query.toString()
+  return queryString ? `${endpoint}?${queryString}` : endpoint
 }
 
 export default { get, post, put, delete: del }

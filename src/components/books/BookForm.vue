@@ -27,12 +27,8 @@
       <input v-model="form.category" placeholder="Novel, Teknologi, Sejarah" />
     </label>
     <label class="span-2">
-      File / URL PDF
-      <input v-model="form.pdf_url" placeholder="nama-file.pdf atau https://contoh.com/buku.pdf" />
-    </label>
-    <label class="span-2">
-      URL Cover
-      <input v-model="form.cover_url" placeholder="https://contoh.com/cover.jpg" />
+      Nama File PDF
+      <input v-model="form.pdf_url" placeholder="nama-file.pdf" />
     </label>
 
     <div class="form-preview span-2">
@@ -74,7 +70,6 @@ const form = reactive({
   stock: 1,
   category: '',
   pdf_url: '',
-  cover_url: '',
 })
 
 const initial = computed(() => (form.title || 'B').slice(0, 1).toUpperCase())
@@ -90,7 +85,6 @@ watch(
       stock: book?.stock ?? 1,
       category: book?.category || '',
       pdf_url: book?.pdf_url || book?.pdf_file || book?.pdfUrl || '',
-      cover_url: book?.cover_url || book?.coverUrl || '',
     })
   },
   { immediate: true },

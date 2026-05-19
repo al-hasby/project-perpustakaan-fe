@@ -7,25 +7,19 @@
       </div>
 
       <label>
-        Email / Username
-        <input v-model="form.email" placeholder="Kosongkan untuk dummy member" />
+        Username
+        <input v-model="form.username" required placeholder="admin" />
       </label>
       <label>
         Password
-        Password
-        <input v-model="form.password" type="password" placeholder="Boleh kosong untuk dummy" />
+        <input v-model="form.password" required type="password" placeholder="Password" />
       </label>
 
       <p v-if="error" class="alert error">{{ error }}</p>
       <button class="btn primary full" type="submit" :disabled="loading">
         {{ loading ? 'Memproses...' : 'Masuk' }}
       </button>
-      <div class="dummy-actions">
-        <button class="btn ghost" type="button" @click="loginAs('admin')">Admin</button>
-        <button class="btn ghost" type="button" @click="loginAs('petugas')">Petugas</button>
-        <button class="btn ghost" type="button" @click="loginAs('member')">Member</button>
-      </div>
-      <RouterLink to="/register">Belum punya akun? Daftar</RouterLink>
+      <p class="muted">Jika belum punya akun, daftar dulu — pendaftaran akan membuat akun member.</p>
     </form>
   </section>
 </template>
@@ -33,14 +27,14 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { login, loginDummy } from '@/api/auth.js'
+import { login } from '@/api/auth.js'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const form = reactive({
-  email: '',
+  username: '',
   password: '',
 })
 
@@ -58,8 +52,4 @@ async function handleSubmit() {
   }
 }
 
-async function loginAs(role) {
-  await loginDummy(role)
-  router.push(route.query.redirect || '/')
-}
 </script>

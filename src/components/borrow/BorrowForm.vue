@@ -2,8 +2,13 @@
   <form class="panel form-grid" @submit.prevent="submitForm">
     <h2 class="span-2">Input Peminjaman</h2>
     <label>
-      ID Buku
-      <input v-model="form.book_id" required placeholder="Contoh: 1" />
+      Buku
+      <select v-model="form.book_id" required>
+        <option value="" disabled>Pilih buku</option>
+        <option v-for="book in availableBooks" :key="book.id" :value="book.id">
+          {{ book.title }} - {{ book.stock }} stok
+        </option>
+      </select>
     </label>
     <label>
       Nama Peminjam
@@ -17,6 +22,14 @@
       Tanggal Jatuh Tempo
       <input v-model="form.due_date" required type="date" />
     </label>
+    <label class="span-2">
+      Kondisi Buku
+      <select v-model="form.book_condition" required>
+        <option value="aman">Aman</option>
+        <option value="sedikit_rusak">Sedikit rusak</option>
+        <option value="rusak">Rusak</option>
+      </select>
+    </label>
     <div class="form-actions span-2">
       <button class="btn primary" type="submit">Simpan Peminjaman</button>
     </div>
@@ -24,7 +37,14 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
+
+const props = defineProps({
+  books: {
+    type: Array,
+    default: () => [],
+  },
+})
 
 const emit = defineEmits(['submit'])
 const today = new Date().toISOString().slice(0, 10)
@@ -34,7 +54,10 @@ const form = reactive({
   borrower_name: '',
   borrow_date: today,
   due_date: today,
+  book_condition: 'aman',
 })
+
+const availableBooks = computed(() => props.books.filter((book) => Number(book.stock) > 0))
 
 function submitForm() {
   emit('submit', { ...form })

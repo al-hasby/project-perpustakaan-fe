@@ -267,16 +267,16 @@ async function borrowSelectedBook() {
   try {
     await createBorrow({
       book_id: detailBook.value.id,
-      borrower_name: auth.user?.name || 'Member Dummy',
+      borrower_name: auth.user?.name || auth.user?.username || 'User',
       member_id: auth.user?.id || null,
       borrow_date: borrowDate.toISOString().slice(0, 10),
       due_date: dueDate.toISOString().slice(0, 10),
-      approval_status: 'pending',
+      book_condition: 'aman',
     })
 
     success.value = 'Permintaan peminjaman dikirim. Tunggu persetujuan admin.'
     await loadBooks()
-    detailBook.value = books.value.find((book) => Number(book.id) === Number(detailBook.value.id))
+    detailBook.value = books.value.find((book) => String(book.id) === String(detailBook.value.id))
   } catch (err) {
     error.value = err.message
   } finally {

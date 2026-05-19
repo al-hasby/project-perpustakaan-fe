@@ -7,6 +7,7 @@
           <th>Peminjam</th>
           <th>Pinjam</th>
           <th>Jatuh Tempo</th>
+          <th>Kondisi</th>
           <th>Status</th>
           <th v-if="showActions">Aksi</th>
         </tr>
@@ -17,6 +18,7 @@
           <td>{{ borrow.borrower_name || borrow.member?.name || '-' }}</td>
           <td>{{ borrow.borrow_date || '-' }}</td>
           <td>{{ borrow.due_date || '-' }}</td>
+          <td>{{ getConditionLabel(borrow.book_condition) }}</td>
           <td>
             <span class="status" :class="getStatusClass(borrow)">
               {{ getStatusLabel(borrow) }}
@@ -41,7 +43,7 @@
                 Tolak
               </button>
               <button
-                v-if="canReturn && borrow.approval_status === 'approved'"
+                v-if="canReturn && ['dipinjam', 'terlambat'].includes(borrow.status)"
                 class="btn small primary"
                 type="button"
                 :disabled="Boolean(borrow.returned_at)"
@@ -53,7 +55,7 @@
           </td>
         </tr>
         <tr v-if="!borrows.length">
-          <td :colspan="showActions ? 6 : 5" class="empty-cell">Data peminjaman belum tersedia.</td>
+          <td :colspan="showActions ? 7 : 6" class="empty-cell">Data peminjaman belum tersedia.</td>
         </tr>
       </tbody>
     </table>
@@ -83,16 +85,24 @@ defineEmits(['approve', 'reject', 'return'])
 const showActions = computed(() => props.canApprove || props.canReturn)
 
 function getStatusLabel(borrow) {
-  if (borrow.returned_at) return 'Kembali'
+  if (borrow.status === 'dikembalikan' || borrow.returned_at) return 'Kembali'
   if (borrow.approval_status === 'pending') return 'Menunggu'
   if (borrow.approval_status === 'rejected') return 'Ditolak'
+  if (borrow.status === 'terlambat') return 'Terlambat'
   return 'Dipinjam'
 }
 
 function getStatusClass(borrow) {
-  if (borrow.returned_at) return 'success'
+  if (borrow.status === 'dikembalikan' || borrow.returned_at) return 'success'
   if (borrow.approval_status === 'rejected') return 'danger'
+  if (borrow.status === 'terlambat') return 'danger'
   if (borrow.approval_status === 'pending') return 'warning'
   return 'primary'
+}
+
+function getConditionLabel(condition) {
+  if (condition === 'sedikit_rusak') return 'Sedikit rusak'
+  if (condition === 'rusak') return 'Rusak'
+  return 'Aman'
 }
 </script>
