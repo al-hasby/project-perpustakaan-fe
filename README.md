@@ -36,3 +36,18 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## Registration / Demo accounts
+
+- This frontend supports creating member accounts from the `/register` page.
+- If your backend provides `POST /auth/register`, the app will use it and log you in with the backend token.
+- If the backend endpoint is not available, the app falls back to saving a demo user in `localStorage` (key: `local_demo_users`) and logs in with a fake token — this is for local/demo use only.
+
+To test locally:
+
+```sh
+npm run dev
+# open http://localhost:5173/register
+```
+
+After registering you should be redirected to the home page and see your name in the header.
