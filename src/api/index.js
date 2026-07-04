@@ -26,12 +26,17 @@ async function request(endpoint, options = {}) {
           : JSON.stringify(options.body),
     })
   } catch {
-    throw new Error('Backend tidak bisa dihubungi. Pastikan server Express berjalan di http://localhost:3000.')
+    throw new Error('Cannot connect to server')
   }
 
   if (response.status === 401) {
     authStore.clearAuth()
     window.location.href = '/login'
+    return
+  }
+
+  if (response.status === 403) {
+    throw new Error('FORBIDDEN')
   }
 
   const text = await response.text()

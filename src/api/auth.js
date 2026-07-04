@@ -2,22 +2,52 @@ import { post } from './index.js'
 import { useAuthStore } from '@/stores/auth.js'
 
 export async function login(credentials) {
-  const data = await post('/auth/login', {
-    username: credentials.username,
-    password: credentials.password,
-  })
-  const authStore = useAuthStore()
-  const tokenPayload = decodeJwtPayload(data.token)
-  const role = normalizeRole(data.role || data.user?.role || tokenPayload?.role)
-  const user = data.user || {
-    id: tokenPayload?.id || null,
-    username: credentials.username,
-    name: credentials.username,
-    role,
-  }
+  try {
+    const data = await post('/auth/login', {
+      username: credentials.username,
+      password: credentials.password,
+    })
+    const authStore = useAuthStore()
+    const tokenPayload = decodeJwtPayload(data.token)
+    const role = normalizeRole(data.role || data.user?.role || tokenPayload?.role)
+    const user = data.user || {
+      id: tokenPayload?.id || null,
+      username: credentials.username,
+      name: credentials.username,
+      role,
+    }
 
-  authStore.setAuth(data.token, user, role)
-  return data
+    authStore.setAuth(data.token, user, role)
+    return data
+  } catch (err) {
+    if (
+      err.message.includes('Backend tidak bisa dihubungi') ||
+      err.message.includes('404') ||
+      err.message.includes('Not Found')
+    ) {
+      const users = JSON.parse(localStorage.getItem('local_demo_users') || '[]')
+      const localUser = users.find(
+        (user) => user.username === credentials.username && user.password === credentials.password,
+      )
+
+      if (localUser) {
+        const authStore = useAuthStore()
+        const role = normalizeRole(localUser.role || 'member')
+        const user = {
+          id: localUser.id,
+          username: localUser.username,
+          name: localUser.name,
+          role,
+        }
+        const fakeToken = createFakeToken({ id: user.id, username: user.username, role })
+
+        authStore.setAuth(fakeToken, user, role)
+        return { token: fakeToken, user, role, _localFallback: true }
+      }
+    }
+
+    throw err
+  }
 }
 
 export async function register(userData) {
@@ -50,6 +80,10 @@ export async function register(userData) {
 
     return data
   } catch (err) {
+    if (!err.message.includes('Backend tidak bisa dihubungi')) {
+      throw err
+    }
+
     // Fallback lokal: buat user sederhana di localStorage dan login otomatis.
     const fallbackUsersKey = 'local_demo_users'
     const users = JSON.parse(localStorage.getItem(fallbackUsersKey) || '[]')
@@ -57,8 +91,8 @@ export async function register(userData) {
     const role = normalizeRole(userData.role || 'member')
     const user = {
       id,
-      username: userData.email || userData.username || `user${id}`,
-      name: userData.name || (userData.email || userData.username) || `User ${id}`,
+      username: userData.email || userData.username || userData.name || `user${id}`,
+      name: userData.name || userData.email || userData.username || `User ${id}`,
       role,
     }
 
@@ -92,6 +126,11 @@ export async function logout() {
 function normalizeRole(role) {
   if (role === 'user') return 'member'
   return role || 'member'
+}
+
+function createFakeToken(payload) {
+  const base64 = (obj) => btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return `fake.${base64(payload)}.sig`
 }
 
 function decodeJwtPayload(token) {

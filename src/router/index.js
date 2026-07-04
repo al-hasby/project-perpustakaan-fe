@@ -9,15 +9,17 @@ import BooksPage from '@/pages/books/BooksPage.vue'
 import BorrowPage from '@/pages/borrow/BorrowPage.vue'
 import EbooksPage from '@/pages/ebooks/EbooksPage.vue'
 import ReportPage from '@/pages/report/ReportPage.vue'
+import ProfilePage from '@/pages/ProfilePage.vue'
 
 const routes = [
-  { path: '/', name: 'home', component: HomePage },
+  { path: '/', name: 'home', component: HomePage, alias: '/home' },
   { path: '/login', name: 'login', component: LoginPage, meta: { guestOnly: true } },
   { path: '/register', name: 'register', component: RegisterPage, meta: { guestOnly: true } },
   { path: '/books', name: 'books', component: BooksPage, meta: { requiresAuth: true } },
   { path: '/borrow', name: 'borrow', component: BorrowPage, meta: { requiresAuth: true, roles: ['admin', 'petugas', 'member', 'user'] } },
   { path: '/ebooks', name: 'ebooks', component: EbooksPage, meta: { requiresAuth: true, roles: ['member', 'user'] } },
   { path: '/report', name: 'report', component: ReportPage, meta: { requiresAuth: true, roles: ['admin'] } },
+  { path: '/profile', name: 'profile', component: ProfilePage, meta: { requiresAuth: true } },
   { path: '/unauthorized', name: 'unauthorized', component: UnauthorizedPage },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundPage },
 ]

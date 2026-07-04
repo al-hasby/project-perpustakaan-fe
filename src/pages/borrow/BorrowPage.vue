@@ -1,179 +1,484 @@
 <template>
-  <section class="page">
-    <SuccessPopup :message="success" @close="success = ''" />
-
+  <div class="page">
     <div class="page-header">
       <div>
-        <p class="eyebrow">TASK-002</p>
-        <h1>{{ auth.isMember ? 'Peminjaman Saya' : 'Peminjaman Buku' }}</h1>
-        <p>
-          {{
-            auth.isMember
-              ? 'Pantau buku yang sedang kamu pinjam dan tanggal pengembaliannya.'
-              : 'Petugas dan admin mencatat peminjaman serta pengembalian buku.'
-          }}
-        </p>
+        <h1>{{ auth.isMember ? 'My Loans' : 'Borrowing' }}</h1>
+        <p>{{ auth.isMember ? 'Track your borrowed books and due dates' : 'Manage book loans and returns' }}</p>
+      </div>
+      <div v-if="auth.isAdmin || auth.isPetugas" class="page-header-actions">
+        <button class="btn btn-primary" type="button" @click="showAddModal = true">
+          + New Loan
+        </button>
       </div>
     </div>
 
-    <div class="mini-summary borrow-summary">
-      <article>
-        <span>Total Pinjam</span>
-        <strong>{{ visibleBorrows.length }}</strong>
-      </article>
-      <article>
-        <span>Menunggu Admin</span>
-        <strong>{{ pendingCount }}</strong>
-      </article>
-      <article>
-        <span>Masih Dipinjam</span>
-        <strong>{{ activeCount }}</strong>
-      </article>
-      <article>
-        <span>Sudah Kembali</span>
-        <strong>{{ returnedCount }}</strong>
-      </article>
-    </div>
-
-    <BorrowForm v-if="!auth.isMember" :books="books" @submit="saveBorrow" />
-    <ReturnForm v-if="!auth.isMember" :borrow="selectedBorrow" @submit="confirmReturn" />
-
-    <div class="panel">
-      <div class="toolbar">
-        <h2>Daftar Peminjaman</h2>
-        <select v-model="statusFilter" class="compact-select">
-          <option value="all">Semua status</option>
-          <option value="pending">Menunggu admin</option>
-          <option value="active">Masih dipinjam</option>
-          <option value="returned">Sudah kembali</option>
-          <option value="rejected">Ditolak</option>
-        </select>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value">{{ visibleBorrows.length }}</div>
       </div>
-      <p v-if="error" class="alert error">{{ error }}</p>
-      <BorrowTable
-        :borrows="filteredBorrows"
-        :can-approve="auth.isAdmin"
-        :can-return="auth.canReturnBooks"
-        @approve="approveSelectedBorrow"
-        @reject="rejectSelectedBorrow"
-        @return="selectedBorrow = $event"
-      />
-      <div v-if="!filteredBorrows.length" class="empty-state inline-empty">
-        <h2>Belum ada data peminjaman</h2>
-        <p>{{ auth.isMember ? 'Pinjam buku dari halaman Buku.' : 'Tambahkan peminjaman lewat form di atas.' }}</p>
+      <div class="stat-card">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value">{{ pendingCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active</div>
+        <div class="stat-value">{{ activeCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Returned</div>
+        <div class="stat-value">{{ returnedCount }}</div>
       </div>
     </div>
-  </section>
+
+    <div class="filter-bar">
+      <button
+        v-for="opt in filterOptions"
+        :key="opt.value"
+        class="filter-tab"
+        :class="{ active: statusFilter === opt.value }"
+        @click="statusFilter = opt.value"
+      >
+        {{ opt.label }}
+      </button>
+    </div>
+
+    <div v-if="error" class="alert alert-error" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+      <span style="flex:1">{{ error }}</span>
+      <button class="btn btn-ghost btn-sm" type="button" @click="loadData">Retry</button>
+    </div>
+
+    <div v-if="loading" class="card">
+      <div v-for="n in 4" :key="n" class="skeleton" style="height: 48px; margin-bottom: 8px;"></div>
+    </div>
+
+    <div v-else-if="!filteredBorrows.length" class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>No loans found</h3>
+      <p>{{ auth.isMember ? 'Browse books to borrow from the library' : 'No borrowing records match the selected filter' }}</p>
+    </div>
+
+    <div v-else class="card" style="padding: 0; overflow: hidden;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Book</th>
+              <th>Borrower</th>
+              <th>Borrow Date</th>
+              <th>Due Date</th>
+              <th>Condition</th>
+              <th>Status</th>
+              <th v-if="showActions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="borrow in filteredBorrows" :key="borrow.id">
+              <td><strong>{{ borrow.book_title || borrow.book_id }}</strong></td>
+              <td>{{ borrow.borrower_name || '-' }}</td>
+              <td>{{ borrow.borrow_date || '-' }}</td>
+              <td>{{ borrow.due_date || '-' }}</td>
+              <td>
+                <span :class="['badge', conditionClass(borrow.book_condition)]">
+                  {{ conditionLabel(borrow.book_condition) }}
+                </span>
+              </td>
+              <td>
+                <span :class="['badge', statusBadgeClass(borrow)]">
+                  {{ statusLabel(borrow) }}
+                </span>
+              </td>
+              <td v-if="showActions" class="table-actions">
+                <button
+                  v-if="canApprove(borrow)"
+                  class="btn btn-primary btn-sm"
+                  type="button"
+                  @click="handleApprove(borrow)"
+                >
+                  Approve
+                </button>
+                <button
+                  v-if="canReject(borrow)"
+                  class="btn btn-danger btn-sm"
+                  type="button"
+                  @click="handleReject(borrow)"
+                >
+                  Reject
+                </button>
+                <button
+                  v-if="canReturnAction(borrow)"
+                  class="btn btn-primary btn-sm"
+                  type="button"
+                  @click="openReturnModal(borrow)"
+                >
+                  Return
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <Teleport to="body">
+      <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
+        <div class="modal-box">
+          <button class="modal-close" type="button" @click="showAddModal = false">✕</button>
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">New Loan</h2>
+          <form @submit.prevent="submitNewLoan">
+            <div class="form-grid">
+              <div class="form-group span-2">
+                <label for="loan-book">Book *</label>
+                <select id="loan-book" v-model="newLoan.book_id" required>
+                  <option value="" disabled>Select a book</option>
+                  <option v-for="book in availableBooks" :key="book.id" :value="book.id">
+                    {{ book.title }} ({{ book.stock }} in stock)
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="loan-borrower">Borrower Name *</label>
+                <input id="loan-borrower" v-model="newLoan.borrower_name" required placeholder="Name" />
+              </div>
+              <div class="form-group">
+                <label for="loan-member-id">Member ID</label>
+                <input id="loan-member-id" v-model="newLoan.member_id" type="number" placeholder="Optional" />
+              </div>
+              <div class="form-group">
+                <label for="loan-date">Borrow Date *</label>
+                <input id="loan-date" v-model="newLoan.tanggal_pinjam" type="date" required />
+              </div>
+              <div class="form-group">
+                <label for="loan-due">Due Date *</label>
+                <input id="loan-due" v-model="newLoan.tanggal_kembali" type="date" required />
+              </div>
+              <div class="form-group span-2">
+                <label for="loan-condition">Book Condition</label>
+                <select id="loan-condition" v-model="newLoan.kondisi_buku">
+                  <option value="aman">Good</option>
+                  <option value="sedikit_rusak">Slightly Damaged</option>
+                  <option value="rusak">Damaged</option>
+                </select>
+              </div>
+            </div>
+            <p v-if="loanError" class="alert alert-error" style="margin-top: 12px;">{{ loanError }}</p>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+              <button class="btn btn-ghost" type="button" @click="showAddModal = false">Cancel</button>
+              <button class="btn btn-primary" type="submit" :disabled="saving">
+                {{ saving ? 'Saving...' : 'Create Loan' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="returnBook" class="modal-overlay" @click.self="closeReturnModal">
+        <div class="modal-box">
+          <button class="modal-close" type="button" @click="closeReturnModal">✕</button>
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">Return Book</h2>
+          <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
+            {{ returnBook.book_title || returnBook.book_id }} — {{ returnBook.borrower_name }}
+          </p>
+          <form @submit.prevent="submitReturn">
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="return-date">Return Date *</label>
+              <input id="return-date" v-model="returnPayload.dikembalikan_pada" type="date" required />
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="return-condition">Book Condition *</label>
+              <select id="return-condition" v-model="returnPayload.kondisi_buku" required>
+                <option value="aman">Good</option>
+                <option value="sedikit_rusak">Slightly Damaged</option>
+                <option value="rusak">Damaged</option>
+              </select>
+            </div>
+            <p v-if="returnError" class="alert alert-error" style="margin-bottom: 12px;">{{ returnError }}</p>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button class="btn btn-ghost" type="button" @click="closeReturnModal">Cancel</button>
+              <button class="btn btn-primary" type="submit" :disabled="saving">
+                {{ saving ? 'Processing...' : 'Confirm Return' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+  </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchBooks } from '@/api/books.js'
-import { approveBorrow, createBorrow, fetchBorrows, rejectBorrow, returnBorrow } from '@/api/borrow.js'
+import { createBorrow, fetchBorrows, approveBorrow, rejectBorrow, returnBorrow } from '@/api/borrow.js'
 import { useAuthStore } from '@/stores/auth.js'
-import BorrowForm from '@/components/borrow/BorrowForm.vue'
-import BorrowTable from '@/components/borrow/BorrowTable.vue'
-import ReturnForm from '@/components/borrow/ReturnForm.vue'
-import SuccessPopup from '@/components/SuccessPopup.vue'
 
 const auth = useAuthStore()
 const borrows = ref([])
 const books = ref([])
-const selectedBorrow = ref(null)
-const statusFilter = ref('all')
+const loading = ref(true)
 const error = ref('')
-const success = ref('')
+const statusFilter = ref('all')
+const showAddModal = ref(false)
+const saving = ref(false)
+const loanError = ref('')
+const returnBook = ref(null)
+const returnError = ref('')
 
-const visibleBorrows = computed(() => {
-  if (!auth.isMember) return borrows.value
+const today = new Date().toISOString().slice(0, 10)
+const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
 
-  return borrows.value.filter((borrow) => {
-    return String(borrow.member_id) === String(auth.user?.id) || borrow.borrower_name === auth.user?.name
-  })
+const newLoan = reactive({
+  book_id: '',
+  borrower_name: '',
+  member_id: '',
+  tanggal_pinjam: today,
+  tanggal_kembali: nextWeek,
+  kondisi_buku: 'aman',
 })
+
+const returnPayload = reactive({
+  dikembalikan_pada: today,
+  kondisi_buku: 'aman',
+})
+
+const filterOptions = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'active', label: 'Active' },
+  { value: 'returned', label: 'Returned' },
+  { value: 'rejected', label: 'Rejected' },
+]
+
+const visibleBorrows = computed(() => borrows.value)
 
 const filteredBorrows = computed(() => {
-  if (statusFilter.value === 'active') {
-    return visibleBorrows.value.filter((borrow) => ['dipinjam', 'terlambat'].includes(borrow.status) && !borrow.returned_at)
+  let list = visibleBorrows.value
+  const f = statusFilter.value
+  if (f === 'pending') {
+    list = list.filter(b => b.approval_status === 'pending')
+  } else if (f === 'active') {
+    list = list.filter(b => ['dipinjam', 'terlambat'].includes(b.status) && !b.returned_at)
+  } else if (f === 'returned') {
+    list = list.filter(b => b.status === 'dikembalikan' || b.returned_at)
+  } else if (f === 'rejected') {
+    list = list.filter(b => b.approval_status === 'rejected')
   }
-
-  if (statusFilter.value === 'returned') {
-    return visibleBorrows.value.filter((borrow) => borrow.status === 'dikembalikan' || borrow.returned_at)
-  }
-
-  if (statusFilter.value === 'pending') {
-    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'pending')
-  }
-
-  if (statusFilter.value === 'rejected') {
-    return visibleBorrows.value.filter((borrow) => borrow.approval_status === 'rejected')
-  }
-
-  return visibleBorrows.value
+  return list
 })
 
-const pendingCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.approval_status === 'pending').length)
-const activeCount = computed(() => {
-  return visibleBorrows.value.filter((borrow) => ['dipinjam', 'terlambat'].includes(borrow.status) && !borrow.returned_at).length
-})
-const returnedCount = computed(() => visibleBorrows.value.filter((borrow) => borrow.status === 'dikembalikan' || borrow.returned_at).length)
+const pendingCount = computed(() => visibleBorrows.value.filter(b => b.approval_status === 'pending').length)
+const activeCount = computed(() => visibleBorrows.value.filter(b => ['dipinjam', 'terlambat'].includes(b.status) && !b.returned_at).length)
+const returnedCount = computed(() => visibleBorrows.value.filter(b => b.status === 'dikembalikan' || b.returned_at).length)
 
-async function loadBorrows() {
+const showActions = computed(() => auth.isAdmin || auth.isPetugas)
+
+const availableBooks = computed(() => books.value.filter(b => Number(b.stock) > 0))
+
+function statusLabel(borrow) {
+  if (borrow.returned_at || borrow.status === 'dikembalikan') return 'Returned'
+  if (borrow.approval_status === 'pending') return 'Pending'
+  if (borrow.approval_status === 'rejected') return 'Rejected'
+  if (borrow.status === 'terlambat') return 'Overdue'
+  return 'Borrowed'
+}
+
+function statusBadgeClass(borrow) {
+  if (borrow.returned_at || borrow.status === 'dikembalikan') return 'badge-success'
+  if (borrow.approval_status === 'rejected') return 'badge-danger'
+  if (borrow.approval_status === 'pending') return 'badge-warning'
+  if (borrow.status === 'terlambat') return 'badge-danger'
+  return 'badge-info'
+}
+
+function conditionClass(cond) {
+  if (cond === 'rusak') return 'badge-danger'
+  if (cond === 'sedikit_rusak') return 'badge-warning'
+  return 'badge-success'
+}
+
+function conditionLabel(cond) {
+  if (cond === 'sedikit_rusak') return 'Slightly Damaged'
+  if (cond === 'rusak') return 'Damaged'
+  return 'Good'
+}
+
+function canApprove(borrow) {
+  return auth.isAdmin && borrow.approval_status === 'pending'
+}
+
+function canReject(borrow) {
+  return auth.isAdmin && borrow.approval_status === 'pending'
+}
+
+function canReturnAction(borrow) {
+  return auth.canReturnBooks && ['dipinjam', 'terlambat'].includes(borrow.status) && !borrow.returned_at
+}
+
+function friendlyError(msg) {
+  if (!msg) return 'An unexpected error occurred'
+  if (msg === 'INTERNAL_SERVER_ERROR') return 'Server error. Please try again later.'
+  if (msg === 'TOKEN_REQUIRED' || msg === 'INVALID_TOKEN' || msg === 'UNAUTHENTICATED') return 'Session expired. Please log in again.'
+  if (msg === 'FORBIDDEN') return 'You do not have permission to access this data.'
+  return msg
+}
+
+function decodeMemberId() {
+  const token = localStorage.getItem('token')
+  if (!token) return null
   try {
-    const [borrowData, bookData] = await Promise.all([fetchBorrows(), fetchBooks()])
-    borrows.value = borrowData
-    books.value = bookData
-  } catch (err) {
-    error.value = err.message
+    const [, payload] = token.split('.')
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    return JSON.parse(atob(padded))
+  } catch {
+    return null
   }
 }
 
-async function saveBorrow(payload) {
+async function loadData() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    window.location.href = '/login'
+    return
+  }
+
+  loading.value = true
+  error.value = ''
   try {
-    await createBorrow(payload)
-    success.value = 'Peminjaman berhasil disimpan.'
-    error.value = ''
-    await loadBorrows()
-  } catch (err) {
-    error.value = err.message
+    const results = await Promise.allSettled([fetchBorrows(), fetchBooks()])
+    if (results[0].status === 'fulfilled') {
+      let data = results[0].value
+      if (auth.isMember) {
+        const tokenPayload = decodeMemberId()
+        const memberId = String(tokenPayload?.id || auth.user?.id || '')
+        data = data.filter(b => String(b.member_id) === memberId)
+      }
+      borrows.value = data
+    } else {
+      const errMsg = results[0].reason?.message
+      console.log('[BorrowPage] fetchBorrows error:', results[0].reason)
+      if (errMsg === 'Cannot connect to server') {
+        error.value = 'Cannot connect to server'
+      } else if (errMsg === 'FORBIDDEN') {
+        error.value = 'You don\'t have permission to access this data.'
+      } else {
+        error.value = friendlyError(errMsg)
+      }
+    }
+    if (results[1].status === 'fulfilled') {
+      books.value = results[1].value
+    }
+  } finally {
+    loading.value = false
   }
 }
 
-async function approveSelectedBorrow(borrow) {
+async function submitNewLoan() {
+  saving.value = true
+  loanError.value = ''
+  try {
+    await createBorrow({
+      borrower_name: newLoan.borrower_name,
+      id_buku: newLoan.book_id,
+      tanggal_pinjam: newLoan.tanggal_pinjam,
+      tanggal_kembali: newLoan.tanggal_kembali,
+      kondisi_buku: newLoan.kondisi_buku,
+      member_id: newLoan.member_id || null,
+    })
+    showAddModal.value = false
+    await loadData()
+  } catch (err) {
+    loanError.value = friendlyError(err.message)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function handleApprove(borrow) {
   try {
     await approveBorrow(borrow.id, borrow.book_condition || 'aman')
-    success.value = 'Peminjaman berhasil disetujui.'
-    error.value = ''
-    await loadBorrows()
+    await loadData()
   } catch (err) {
-    error.value = err.message
+    error.value = friendlyError(err.message)
+    setTimeout(() => { error.value = '' }, 3000)
   }
 }
 
-async function rejectSelectedBorrow(borrow) {
+async function handleReject(borrow) {
   try {
     await rejectBorrow(borrow.id)
-    success.value = 'Peminjaman berhasil ditolak.'
-    error.value = ''
-    await loadBorrows()
+    await loadData()
   } catch (err) {
-    error.value = err.message
+    error.value = friendlyError(err.message)
+    setTimeout(() => { error.value = '' }, 3000)
   }
 }
 
-async function confirmReturn(payload) {
-  if (!selectedBorrow.value) return
+function openReturnModal(borrow) {
+  returnBook.value = borrow
+  returnPayload.dikembalikan_pada = today
+  returnPayload.kondisi_buku = borrow.book_condition || 'aman'
+  returnError.value = ''
+}
 
+function closeReturnModal() {
+  returnBook.value = null
+  returnError.value = ''
+}
+
+async function submitReturn() {
+  if (!returnBook.value) return
+  saving.value = true
+  returnError.value = ''
   try {
-    await returnBorrow(selectedBorrow.value.id, payload.returned_at, payload.book_condition)
-    success.value = 'Pengembalian berhasil diproses.'
-    error.value = ''
-    selectedBorrow.value = null
-    await loadBorrows()
+    await returnBorrow(
+      returnBook.value.id,
+      returnPayload.dikembalikan_pada,
+      returnPayload.kondisi_buku,
+    )
+    closeReturnModal()
+    await loadData()
   } catch (err) {
-    error.value = err.message
+    returnError.value = friendlyError(err.message)
+  } finally {
+    saving.value = false
   }
 }
 
-onMounted(loadBorrows)
+onMounted(loadData)
 </script>
+
+<style scoped>
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group.span-2 {
+  grid-column: span 2;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-group.span-2 {
+    grid-column: span 1;
+  }
+}
+</style>

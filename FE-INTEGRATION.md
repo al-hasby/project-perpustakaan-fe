@@ -10,29 +10,23 @@ Local:
 http://localhost:3000
 ```
 
-Contoh pemakaian:
-
-```text
-GET http://localhost:3000/books
-```
-
 ## Auth
 
-Token dikirim lewat header:
+Token dikirim di header:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-Endpoint tanpa token:
+Endpoint terbuka:
 
 ```http
 POST /auth/login
 ```
 
-Endpoint lain butuh login.
+Endpoint lain butuh token.
 
-Role yang dipakai backend:
+Role backend yang valid:
 
 ```text
 admin
@@ -40,20 +34,20 @@ petugas
 user
 ```
 
-Catatan untuk FE: kalau FE memakai role `member`, backend saat ini menyimpan role default sebagai `user`. Samakan mapping `member` FE ke `user`, atau ubah backend kalau ingin nama role finalnya `member`.
+Catatan: jika FE memakai role `member`, map ke `user` karena backend menyimpan role default sebagai `user`.
 
 ## Response Error
 
-Format error dari backend:
+Format error backend:
 
 ```json
 {
   "success": false,
-  "error": "INVALID_CREDENTIALS"
+  "error": "ERROR_CODE"
 }
 ```
 
-Contoh error yang mungkin muncul:
+Beberapa kode error yang mungkin muncul:
 
 ```text
 TOKEN_REQUIRED
@@ -61,13 +55,18 @@ INVALID_TOKEN
 UNAUTHENTICATED
 FORBIDDEN
 USERNAME_PASSWORD_REQUIRED
+USERNAME_ALREADY_EXISTS
 INVALID_CREDENTIALS
 INVALID_PAYLOAD
 INVALID_KONDISI_BUKU
 BOOK_NOT_FOUND
 EBOOK_NOT_FOUND
 PINJAM_NOT_FOUND
+PINJAM_NOT_APPROVED
+PINJAM_ALREADY_APPROVED
+PINJAM_ALREADY_REJECTED
 BOOK_OUT_OF_STOCK
+USER_NOT_FOUND
 ```
 
 ## Authentication Endpoints
@@ -83,20 +82,25 @@ Body:
 ```json
 {
   "username": "admin",
-  "password": "1"
+  "password": "123"
 }
 ```
 
-Response sekarang:
+Response:
 
 ```json
 {
   "message": "login success",
-  "token": "jwt_token"
+  "token": "jwt_token",
+  "user": {
+    "id": "user_id",
+    "username": "admin",
+    "role": "admin"
+  }
 }
 ```
 
-Catatan: backend belum mengirim object `user` di response login. Isi token JWT berisi:
+JWT berisi:
 
 ```json
 {
@@ -109,6 +113,12 @@ Catatan: backend belum mengirim object `user` di response login. Isi token JWT b
 
 ```http
 POST /auth/logout
+```
+
+Header:
+
+```http
+Authorization: Bearer <token>
 ```
 
 Response:
@@ -125,7 +135,35 @@ Response:
 POST /auth/register
 ```
 
-Status: belum ada di backend.
+Body:
+
+```json
+{
+  "name": "User Name",
+  "username": "user@example.com",
+  "password": "password",
+  "role": "user"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "register success",
+  "token": "jwt_token",
+  "user": {
+    "id": "uuid",
+    "username": "user@example.com",
+    "role": "user"
+  }
+}
+```
+
+Catatan:
+- Field `role` opsional, default `user`.
+- Field `name` diterima tapi tidak disimpan (disimpan hanya `username`).
+- Jika username sudah ada, return error `USERNAME_ALREADY_EXISTS`.
 
 ## Books
 
@@ -235,19 +273,36 @@ Response:
 }
 ```
 
-### Search, Pagination, Filter, Sort Books
+### Search / Pagination / Filter
 
-Status: belum ada di backend.
-
-Query seperti ini belum diproses:
-
-```text
-GET /books?search=...
+```http
+GET /books?search=laskar
 GET /books?page=1&limit=10
-GET /books?status=...
 ```
 
-FE bisa filter lokal sementara dari response `GET /books`, atau backend perlu ditambah query support.
+Query `search` mencari di kolom `judul`, `pengarang`, `penerbit`.
+
+Jika ada query `page` dan `limit`, response dibungkus dengan pagination:
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "judul": "Laskar Pelangi",
+      "pengarang": "Andrea Hirata",
+      ...
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 50
+  }
+}
+```
+
+Tanpa query `page`/`limit`, response tetap array langsung (default).
 
 ## Peminjaman / Borrow
 
@@ -258,7 +313,7 @@ Backend memasang route yang sama di dua prefix:
 /borrow
 ```
 
-FE boleh pakai `/borrow` agar lebih cocok dengan nama frontend.
+FE boleh pakai `/borrow`.
 
 ### Get All Borrow
 
@@ -269,32 +324,34 @@ GET /borrow
 Response:
 
 ```json
-[
-  {
-    "id": "uuid",
-    "member_id": "uuid",
-    "borrower_name": "Budi",
-    "id_buku": 1,
-    "book_id": 1,
-    "judul_buku": "Laskar Pelangi",
-    "book_title": "Laskar Pelangi",
-    "tanggal_pinjam": "2026-05-19",
-    "borrow_date": "2026-05-19",
-    "tanggal_kembali": "2026-05-26",
-    "due_date": "2026-05-26",
-    "dikembalikan_pada": null,
-    "returned_at": null,
-    "status": "menunggu",
-    "kondisi_buku": "aman",
-    "book_condition": "aman",
-    "disetujui_oleh": null,
-    "disetujui_pada": null,
-    "ditolak_oleh": null,
-    "ditolak_pada": null,
-    "created_at": "2026-05-19T00:00:00.000Z",
-    "updated_at": "2026-05-19T00:00:00.000Z"
-  }
-]
+{
+  "rows": [
+    {
+      "id": "uuid",
+      "member_id": "uuid",
+      "borrower_name": "Budi",
+      "id_buku": 1,
+      "book_id": 1,
+      "judul_buku": "Laskar Pelangi",
+      "book_title": "Laskar Pelangi",
+      "tanggal_pinjam": "2026-05-19",
+      "borrow_date": "2026-05-19",
+      "tanggal_kembali": "2026-05-26",
+      "due_date": "2026-05-26",
+      "dikembalikan_pada": null,
+      "returned_at": null,
+      "status": "menunggu",
+      "kondisi_buku": "aman",
+      "book_condition": "aman",
+      "disetujui_oleh": null,
+      "disetujui_pada": null,
+      "ditolak_oleh": null,
+      "ditolak_pada": null,
+      "created_at": "2026-05-19T00:00:00.000Z",
+      "updated_at": "2026-05-19T00:00:00.000Z"
+    }
+  ]
+}
 ```
 
 ### Get Borrow Detail
@@ -353,7 +410,7 @@ PUT /borrow/:id/approve
 
 Role: `admin`.
 
-Body opsional untuk input kondisi buku saat konfirmasi:
+Body opsional:
 
 ```json
 {
@@ -361,7 +418,7 @@ Body opsional untuk input kondisi buku saat konfirmasi:
 }
 ```
 
-Alias yang juga diterima:
+Alias:
 
 ```json
 {
@@ -383,7 +440,7 @@ Response: object peminjaman terbaru.
 
 ### Return Book
 
-Ada dua endpoint yang tersedia:
+Endpoint:
 
 ```http
 PUT /borrow/:id/return
@@ -401,7 +458,7 @@ Body opsional:
 }
 ```
 
-Alias yang juga diterima:
+Alias:
 
 ```json
 {
@@ -413,24 +470,6 @@ Alias yang juga diterima:
 Response: object peminjaman terbaru.
 
 Jika berhasil, status menjadi `dikembalikan` dan stok buku bertambah 1.
-
-Nilai kondisi buku yang diterima:
-
-```text
-aman
-buku aman
-sedikit_rusak
-sedikit rusak
-rusak
-```
-
-Nilai yang disimpan dan dikirim kembali oleh backend:
-
-```text
-aman
-sedikit_rusak
-rusak
-```
 
 ### Delete Borrow
 
@@ -456,9 +495,9 @@ terlambat
 ditolak
 ```
 
-## Ebooks / PDF
+## Ebooks
 
-Backend saat ini memakai route `/ebooks`, bukan `/books/pdf`.
+Backend memakai route `/ebooks`.
 
 ### Get All Ebooks
 
@@ -722,9 +761,6 @@ Belum ada field cover buku di table/model.
 Fitur yang diminta FE tapi belum ada di backend:
 
 ```text
-POST /auth/register
-GET /books?search=...
-GET /books?page=1&limit=10
 GET /books/pdf
 GET /books/pdf/:id
 GET /report
@@ -732,14 +768,14 @@ GET /report/overdue
 GET /report/damaged
 upload PDF multipart/form-data
 upload cover buku
-response login berisi user object
 ```
 
-Rekomendasi paling cepat untuk FE:
+Rekomendasi untuk FE:
 
 ```text
 1. Pakai endpoint yang sudah ada dulu.
-2. Decode JWT untuk ambil id dan role user, atau minta backend menambah user object di response login.
-3. Pakai /ebooks untuk PDF.
-4. Pakai filter lokal untuk search buku sampai backend menambah query search/pagination.
+2. Login sekarang sudah mengembalikan user object, bisa langsung dipakai.
+3. Register sudah tersedia di POST /auth/register.
+4. Books sudah mendukung search & pagination (search, page, limit).
+5. Pakai /ebooks untuk PDF.
 ```
