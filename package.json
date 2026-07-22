@@ -4,11 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"node server.js\"",
+    "dev:fe": "vite",
+    "dev:api": "node server.js",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.23.1",
     "pinia": "^3.0.4",
@@ -17,6 +20,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
+    "concurrently": "^10.0.3",
+    "express": "^5.2.1",
     "vite": "^8.0.3",
     "vite-plugin-vue-devtools": "^8.1.1"
   },
