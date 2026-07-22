@@ -347,7 +347,7 @@ label {
 /* ── Grid: Cards ── */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -549,7 +549,7 @@ td {
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .card-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 }
 
@@ -568,6 +568,7 @@ td {
 
   .page {
     padding: 16px;
+    padding-top: 56px;
   }
 
   .page-header {
@@ -576,12 +577,56 @@ td {
   }
 
   .card-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+  }
+
+  .search-bar {
+    max-width: 100%;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-card .stat-value {
+    font-size: 22px;
   }
 }
 
 @media (max-width: 480px) {
   .card-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .btn {
+    height: 36px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .btn-sm {
+    height: 30px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .modal-box {
+    padding: 16px;
+    border-radius: var(--radius-md);
   }
 }

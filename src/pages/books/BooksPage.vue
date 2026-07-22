@@ -713,5 +713,25 @@ onMounted(loadBooks)
   .form-group.span-2 {
     grid-column: span 1;
   }
+
+  .filter-bar {
+    flex-direction: column;
+  }
+
+  .filter-select {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .search-bar {
+    max-width: 100%;
+    min-width: unset;
+  }
+
+  .book-card-actions .btn {
+    font-size: 10px;
+    padding: 2px 6px;
+    height: 24px;
+  }
 }
 </style>

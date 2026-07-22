@@ -202,3 +202,20 @@ onMounted(async () => {
   await Promise.allSettled([loadDashboard(), loadTable()])
 })
 </script>
+
+<style scoped>
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .filter-tab {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+}
+</style>

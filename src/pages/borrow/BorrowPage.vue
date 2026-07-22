@@ -480,5 +480,18 @@ onMounted(loadData)
   .form-group.span-2 {
     grid-column: span 1;
   }
+
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .filter-tab {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 5px 12px;
+  }
 }
 </style>

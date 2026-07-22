@@ -246,4 +246,25 @@ onMounted(loadEbooks)
   color: var(--color-text-muted);
   font-size: 16px;
 }
+
+@media (max-width: 640px) {
+  .reader-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .reader-header h2 {
+    font-size: 14px;
+  }
+
+  .reader-actions {
+    width: 100%;
+  }
+
+  .reader-actions .btn {
+    flex: 1;
+  }
+}
 </style>
