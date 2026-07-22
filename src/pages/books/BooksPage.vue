@@ -45,11 +45,11 @@
     </div>
 
     <div v-if="loading" class="card-grid">
-      <div v-for="n in 6" :key="n" class="card">
-        <div class="skeleton" style="height: 180px; margin-bottom: 12px;"></div>
-        <div class="skeleton" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
-        <div class="skeleton" style="width: 40%; height: 14px; margin-bottom: 12px;"></div>
-        <div class="skeleton" style="width: 80px; height: 24px;"></div>
+      <div v-for="n in 10" :key="n" class="card">
+        <div class="skeleton" style="aspect-ratio: 2/3; margin-bottom: 8px;"></div>
+        <div class="skeleton" style="width: 60%; height: 12px; margin-bottom: 6px;"></div>
+        <div class="skeleton" style="width: 40%; height: 10px; margin-bottom: 8px;"></div>
+        <div class="skeleton" style="width: 60px; height: 20px;"></div>
       </div>
     </div>
 
@@ -64,8 +64,8 @@
     <div v-else class="card-grid">
       <article v-for="book in filteredBooks" :key="book.id" class="card book-card-item">
         <div class="book-card-cover" @click="openDetail(book)">
-          <div v-if="book.cover_url" class="cover-img" :style="{ backgroundImage: `url(${book.cover_url})` }"></div>
-          <div v-else class="cover-fallback">{{ getInitial(book.title) }}</div>
+          <img v-if="book.cover_url" :src="book.cover_url" :alt="book.title" class="cover-img" @error="$event.target.style.display='none'" />
+          <div v-if="!book.cover_url" class="cover-fallback">{{ getInitial(book.title) }}</div>
         </div>
         <div class="book-card-body">
           <div class="book-category">{{ book.category || 'General' }}</div>
@@ -103,8 +103,8 @@
           <button class="modal-close" type="button" @click="closeDetail">✕</button>
           <div class="detail-layout">
             <div class="detail-cover-section">
-              <div v-if="detailBook.cover_url" class="detail-cover-img" :style="{ backgroundImage: `url(${detailBook.cover_url})` }"></div>
-              <div v-else class="detail-cover-fallback">{{ getInitial(detailBook.title) }}</div>
+              <img v-if="detailBook.cover_url" :src="detailBook.cover_url" :alt="detailBook.title" class="detail-cover-img" @error="$event.target.style.display='none'" />
+              <div v-if="!detailBook.cover_url" class="detail-cover-fallback">{{ getInitial(detailBook.title) }}</div>
             </div>
             <div class="detail-info">
               <span class="badge badge-info">{{ detailBook.category || 'General' }}</span>
@@ -190,6 +190,17 @@
                 <label for="book-pdf">PDF File URL</label>
                 <input id="book-pdf" v-model="form.pdf_url" placeholder="filename.pdf" />
               </div>
+              <div class="form-group span-2">
+                <label for="book-cover">Cover Image URL</label>
+                <input id="book-cover" v-model="form.cover_url" placeholder="https://example.com/cover.jpg" />
+              </div>
+              <div class="form-group span-2" v-if="form.cover_url">
+                <label>Cover Preview</label>
+                <div class="cover-preview-wrap">
+                  <img :src="form.cover_url" alt="Cover preview" class="cover-preview-img" @error="coverPreviewError = true" />
+                  <div v-if="coverPreviewError" class="cover-preview-fallback">{{ getInitial(form.title || 'B') }}</div>
+                </div>
+              </div>
             </div>
             <p v-if="formError" class="alert alert-error" style="margin-top: 12px;">{{ formError }}</p>
             <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
@@ -223,6 +234,7 @@ const showForm = ref(false)
 const editingBook = ref(null)
 const saving = ref(false)
 const formError = ref('')
+const coverPreviewError = ref(false)
 
 const form = reactive({
   title: '',
@@ -232,7 +244,26 @@ const form = reactive({
   stock: 1,
   category: '',
   pdf_url: '',
+  cover_url: '',
 })
+
+const COVERS_KEY = 'book_covers'
+
+function loadCoversMap() {
+  try { return JSON.parse(localStorage.getItem(COVERS_KEY) || '{}') } catch { return {} }
+}
+function saveCoversMap(map) { localStorage.setItem(COVERS_KEY, JSON.stringify(map)) }
+function persistCover(bookId, coverUrl) {
+  const map = loadCoversMap()
+  if (coverUrl) map[bookId] = coverUrl
+  else delete map[bookId]
+  saveCoversMap(map)
+}
+function removeCover(bookId) {
+  const map = loadCoversMap()
+  delete map[bookId]
+  saveCoversMap(map)
+}
 
 const categories = computed(() => {
   return [...new Set(books.value.map(b => b.category).filter(Boolean))].sort()
@@ -259,7 +290,19 @@ function getInitial(title = 'B') {
 async function loadBooks() {
   loading.value = true
   try {
-    books.value = await fetchBooks()
+    const fetched = await fetchBooks()
+    const coversMap = loadCoversMap()
+    const seen = new Set()
+    books.value = fetched.reduce((acc, b) => {
+      const key = b.id || b.title
+      if (seen.has(key)) return acc
+      seen.add(key)
+      acc.push({
+        ...b,
+        cover_url: b.cover_url || coversMap[b.id] || coversMap[String(b.id)] || coversMap[b.title] || '',
+      })
+      return acc
+    }, [])
   } catch (err) {
     console.error(err)
   } finally {
@@ -284,6 +327,7 @@ function closeDetail() {
 
 function openCreate() {
   editingBook.value = null
+  coverPreviewError.value = false
   Object.assign(form, {
     title: '',
     author: '',
@@ -292,12 +336,14 @@ function openCreate() {
     stock: 1,
     category: '',
     pdf_url: '',
+    cover_url: '',
   })
   showForm.value = true
 }
 
 function openEdit(book) {
   editingBook.value = book
+  coverPreviewError.value = false
   Object.assign(form, {
     title: book.title || '',
     author: book.author || '',
@@ -306,6 +352,7 @@ function openEdit(book) {
     stock: book.stock ?? 1,
     category: book.category || '',
     pdf_url: book.pdf_url || '',
+    cover_url: book.cover_url || '',
   })
   showForm.value = true
 }
@@ -326,8 +373,14 @@ async function saveBook() {
   try {
     if (editingBook.value?.id) {
       await updateBook(editingBook.value.id, { ...form })
+      persistCover(editingBook.value.id, form.cover_url)
     } else {
-      await addBook({ ...form })
+      const saved = await addBook({ ...form })
+      if (saved?.id) {
+        persistCover(saved.id, form.cover_url)
+      } else if (form.title) {
+        persistCover(form.title, form.cover_url)
+      }
     }
     closeForm()
     await loadBooks()
@@ -342,6 +395,7 @@ async function removeBook(book) {
   if (!confirm(`Delete "${book.title}"?`)) return
   try {
     await deleteBook(book.id)
+    removeCover(book.id)
     await loadBooks()
   } catch (err) {
     console.error(err)
@@ -421,16 +475,16 @@ onMounted(loadBooks)
 }
 
 .book-card-cover {
-  height: 200px;
+  aspect-ratio: 2 / 3;
   cursor: pointer;
   overflow: hidden;
+  background: var(--color-bg);
 }
 
 .cover-img {
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
+  object-fit: contain;
 }
 
 .cover-fallback {
@@ -440,15 +494,44 @@ onMounted(loadBooks)
   place-items: center;
   background: linear-gradient(145deg, #1E293B, var(--color-primary));
   color: #fff;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .book-card-body {
-  padding: 16px;
+  padding: 10px;
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.book-category {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.book-title {
+  font-size: 13px;
+}
+
+.book-author {
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.book-meta-row {
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.book-card-actions {
+  gap: 4px;
+}
+
+.book-card-actions .btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 28px;
 }
 
 .book-category {
@@ -509,8 +592,8 @@ onMounted(loadBooks)
 .detail-cover-img {
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
+  object-fit: contain;
+  background: var(--color-bg);
 }
 
 .detail-cover-fallback {
@@ -587,6 +670,31 @@ onMounted(loadBooks)
   font-size: 12px;
   font-weight: 500;
   color: var(--color-text-muted);
+}
+
+.cover-preview-wrap {
+  width: 140px;
+  height: 200px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.cover-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-preview-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #1E293B, var(--color-primary));
+  color: #fff;
+  font-size: 32px;
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {

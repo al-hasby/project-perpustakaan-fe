@@ -390,6 +390,7 @@ Frontend tidak secara langsung memanggil endpoint user saat ini, tetapi backend 
 - `kategori`
 - `stok`
 - `pdf_file`
+- `cover_url`
 - `created_at`
 - `updated_at`
 

@@ -13,8 +13,9 @@ export async function searchBooks(query) {
 export async function addBook(bookData) {
   const payload = toBackendBook(bookData)
 
-  await post('/books', payload)
-  return normalizeBook(bookData)
+  const res = await post('/books', payload)
+  const id = res?.id || res?.data?.id || null
+  return { ...normalizeBook(bookData), id }
 }
 
 export async function updateBook(id, bookData) {
@@ -63,5 +64,6 @@ function toBackendBook(book = {}) {
     kategori: book.category || book.kategori || '',
     stok: book.stock ?? book.stok ?? 0,
     pdf_file: book.pdf_url || book.pdf_file || null,
+    cover_url: book.cover_url || book.coverUrl || book.cover || null,
   }
 }
