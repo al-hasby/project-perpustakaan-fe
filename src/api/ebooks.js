@@ -1,16 +1,17 @@
-import { get, unwrapList } from './index.js'
+import { getData } from '@/data/store.js'
 import { normalizeBook } from './books.js'
 
 export async function fetchEbooks() {
-  const ebooks = unwrapList(await get('/ebooks'), ['books', 'ebooks'])
-  return ebooks.map(normalizeEbook)
+  return getData().ebooks.map(e => normalizeBook({
+    ...e,
+    pengarang: e.pengarang || e.penulis,
+    pdf_file: e.pdf_file || e.file_url,
+  }))
 }
 
 export async function fetchPdfAccess(bookId) {
-  return normalizeEbook(await get(`/ebooks/${bookId}`))
-}
-
-function normalizeEbook(ebook = {}) {
+  const ebook = getData().ebooks.find(e => String(e.id) === String(bookId))
+  if (!ebook) throw new Error('Ebook tidak ditemukan')
   return normalizeBook({
     ...ebook,
     pengarang: ebook.pengarang || ebook.penulis,

@@ -1,18 +1,27 @@
-import { get, unwrapList } from './index.js'
+import { getData } from '@/data/store.js'
 
 export async function fetchReports() {
-  const dashboard = await get('/reports/dashboard')
+  const { borrows, books, ebooks } = getData()
+  const total_pinjam = borrows.filter(b => b.status !== 'ditolak').length
+  const total_kembali = borrows.filter(b => b.status === 'dikembalikan').length
+  const total_belum_kembali = borrows.filter(b => b.status === 'dipinjam').length
+  const total_terlambat = borrows.filter(b => {
+    if (b.status !== 'dipinjam') return false
+    return new Date(b.tanggal_kembali) < new Date()
+  }).length
+  const total_rusak = borrows.filter(b =>
+    b.kondisi_buku === 'rusak' || b.kondisi_buku === 'sedikit_rusak'
+  ).length
 
   return {
     summary: {
-      total_borrowed: dashboard.total_pinjam || 0,
-      not_returned:
-        dashboard.total_belum_kembali || Math.max(0, (dashboard.total_pinjam || 0) - (dashboard.total_kembali || 0)),
-      overdue: dashboard.total_terlambat || dashboard.keterlambatan || 0,
-      damaged: dashboard.total_rusak || dashboard.rusak || 0,
-      total_books: dashboard.total_books || 0,
-      total_ebooks: dashboard.total_ebooks || 0,
-      total_returned: dashboard.total_kembali || 0,
+      total_borrowed: total_pinjam,
+      not_returned: total_belum_kembali,
+      overdue: total_terlambat,
+      damaged: total_rusak,
+      total_books: books.length,
+      total_ebooks: ebooks.length,
+      total_returned: total_kembali,
     },
   }
 }
@@ -22,20 +31,32 @@ export async function fetchOverdue() {
 }
 
 export async function fetchDamagedBooks() {
-  return (await fetchBorrowReport('rusak')).map((item) => ({
+  return (await fetchBorrowReport('rusak')).map(item => ({
     ...item,
     title: item.book_title,
-    condition: getConditionLabel(item.book_condition),
+    condition: item.book_condition === 'sedikit_rusak' ? 'Sedikit rusak'
+      : item.book_condition === 'rusak' ? 'Rusak' : 'Aman',
     note: item.status || '-',
   }))
 }
 
 export async function fetchBorrowReport(filter = 'all') {
-  return unwrapReportRows(await get('/reports/peminjaman', { filter }))
-}
+  const { borrows } = getData()
+  let rows = [...borrows]
 
-function unwrapReportRows(payload) {
-  return unwrapList(payload, ['rows']).map((item) => ({
+  switch (filter) {
+    case 'keterlambatan':
+      rows = rows.filter(b => b.status === 'dipinjam' && new Date(b.tanggal_kembali) < new Date())
+      break
+    case 'belum_kembali':
+      rows = rows.filter(b => b.status === 'dipinjam')
+      break
+    case 'rusak':
+      rows = rows.filter(b => b.kondisi_buku === 'rusak' || b.kondisi_buku === 'sedikit_rusak')
+      break
+  }
+
+  return rows.map(item => ({
     ...item,
     book_title: item.book_title || item.judul_buku || '',
     borrow_date: item.borrow_date || item.tanggal_pinjam || '',
@@ -43,10 +64,4 @@ function unwrapReportRows(payload) {
     returned_at: item.returned_at || item.dikembalikan_pada || null,
     book_condition: item.book_condition || item.kondisi_buku || 'aman',
   }))
-}
-
-function getConditionLabel(condition) {
-  if (condition === 'sedikit_rusak') return 'Sedikit rusak'
-  if (condition === 'rusak') return 'Rusak'
-  return 'Aman'
 }

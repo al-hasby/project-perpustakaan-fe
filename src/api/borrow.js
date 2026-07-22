@@ -1,79 +1,104 @@
-import { get, post, put, del, unwrapList } from './index.js'
-
-export async function fetchBorrows() {
-  const borrows = unwrapList(await get('/borrow'), ['borrows', 'borrow'])
-  return borrows.map(normalizeBorrow)
-}
-
-export async function createBorrow(borrowData) {
-  const payload = toBackendBorrow(borrowData)
-
-  return normalizeBorrow(await post('/borrow', payload))
-}
-
-export async function approveBorrow(id, bookCondition = 'aman') {
-  return normalizeBorrow(
-    await put(`/borrow/${id}/approve`, {
-      kondisi_buku: normalizeBookCondition(bookCondition),
-    }),
-  )
-}
-
-export async function rejectBorrow(id) {
-  return normalizeBorrow(await put(`/borrow/${id}/reject`, {}))
-}
-
-export async function returnBorrow(id, returnedAt = new Date().toISOString().slice(0, 10), bookCondition = 'aman') {
-  const payload = {
-    dikembalikan_pada: returnedAt,
-    kondisi_buku: normalizeBookCondition(bookCondition),
-  }
-
-  return normalizeBorrow(await put(`/borrow/${id}/return`, payload))
-}
-
-export async function deleteBorrow(id) {
-  return await del(`/borrow/${id}`)
-}
+import { getData, save } from '@/data/store.js'
 
 function normalizeBorrow(borrow = {}) {
-  const status = borrow.status || borrow.approval_status || borrow.status_persetujuan || 'dipinjam'
-  const approvalStatus = normalizeApprovalStatus(status)
+  const status = borrow.status || 'dipinjam'
+  const approvalStatus = ['menunggu', 'pending'].includes(status) ? 'pending'
+    : ['ditolak', 'rejected'].includes(status) ? 'rejected'
+    : 'approved'
 
   return {
     ...borrow,
-    book_id: borrow.book_id || borrow.id_buku || borrow.book?.id || null,
-    book_title: borrow.book_title || borrow.judul_buku || borrow.book?.title || borrow.book?.judul || '',
+    book_id: borrow.book_id || borrow.id_buku || null,
+    book_title: borrow.book_title || borrow.judul_buku || '',
     borrow_date: borrow.borrow_date || borrow.tanggal_pinjam || '',
     due_date: borrow.due_date || borrow.tanggal_kembali || '',
     returned_at: borrow.returned_at || borrow.dikembalikan_pada || null,
-    book_condition: normalizeBookCondition(borrow.book_condition || borrow.kondisi_buku || 'aman'),
+    book_condition: borrow.book_condition || borrow.kondisi_buku || 'aman',
     status,
     approval_status: approvalStatus,
-    approved_at: borrow.approved_at || borrow.disetujui_pada || borrow.tanggal_disetujui || null,
-    rejected_at: borrow.rejected_at || borrow.ditolak_pada || borrow.tanggal_ditolak || null,
+    approved_at: borrow.approved_at || null,
+    rejected_at: borrow.rejected_at || null,
   }
 }
 
-function normalizeApprovalStatus(status) {
-  if (['menunggu', 'pending'].includes(status)) return 'pending'
-  if (['ditolak', 'rejected'].includes(status)) return 'rejected'
-  return 'approved'
+export async function fetchBorrows() {
+  return getData().borrows.map(normalizeBorrow)
 }
 
-function toBackendBorrow(borrow = {}) {
-  return {
-    borrower_name: borrow.borrower_name || '',
-    id_buku: borrow.id_buku || borrow.book_id || null,
-    tanggal_pinjam: borrow.tanggal_pinjam || borrow.borrow_date || '',
-    tanggal_kembali: borrow.tanggal_kembali || borrow.due_date || '',
-    kondisi_buku: normalizeBookCondition(borrow.kondisi_buku || borrow.book_condition || 'aman'),
-    member_id: borrow.member_id || null,
+export async function createBorrow(borrowData) {
+  const data = getData()
+  const book = data.books.find(b => String(b.id) === String(borrowData.id_buku || borrowData.book_id))
+  if (!book) throw new Error('Buku tidak ditemukan')
+
+  const newBorrow = {
+    id: `b-${Date.now()}`,
+    member_id: borrowData.member_id || null,
+    borrower_name: borrowData.borrower_name || '',
+    id_buku: Number(borrowData.id_buku || borrowData.book_id),
+    judul_buku: book.judul,
+    tanggal_pinjam: borrowData.tanggal_pinjam || borrowData.borrow_date || '',
+    tanggal_kembali: borrowData.tanggal_kembali || borrowData.due_date || '',
+    dikembalikan_pada: null,
+    status: 'menunggu',
+    kondisi_buku: borrowData.kondisi_buku || borrowData.book_condition || 'aman',
+    approval_status: 'pending',
   }
+
+  data.borrows.push(newBorrow)
+  save(data)
+  return normalizeBorrow(newBorrow)
 }
 
-function normalizeBookCondition(condition = 'aman') {
-  if (condition === 'buku aman') return 'aman'
-  if (condition === 'sedikit rusak') return 'sedikit_rusak'
-  return ['aman', 'sedikit_rusak', 'rusak'].includes(condition) ? condition : 'aman'
+export async function approveBorrow(id, bookCondition = 'aman') {
+  const data = getData()
+  const borrow = data.borrows.find(b => b.id === id)
+  if (!borrow) throw new Error('Peminjaman tidak ditemukan')
+
+  borrow.status = 'dipinjam'
+  borrow.approval_status = 'approved'
+  borrow.kondisi_buku = bookCondition === 'buku aman' ? 'aman' : bookCondition
+
+  if (borrow.id_buku) {
+    const book = data.books.find(b => b.id === borrow.id_buku)
+    if (book) book.stok = Math.max(0, book.stok - 1)
+  }
+
+  save(data)
+  return normalizeBorrow(borrow)
+}
+
+export async function rejectBorrow(id) {
+  const data = getData()
+  const borrow = data.borrows.find(b => b.id === id)
+  if (!borrow) throw new Error('Peminjaman tidak ditemukan')
+
+  borrow.status = 'ditolak'
+  borrow.approval_status = 'rejected'
+
+  save(data)
+  return normalizeBorrow(borrow)
+}
+
+export async function returnBorrow(id, returnedAt, bookCondition = 'aman') {
+  const data = getData()
+  const borrow = data.borrows.find(b => b.id === id)
+  if (!borrow) throw new Error('Peminjaman tidak ditemukan')
+
+  borrow.status = 'dikembalikan'
+  borrow.dikembalikan_pada = returnedAt || new Date().toISOString().slice(0, 10)
+  borrow.kondisi_buku = bookCondition === 'buku aman' ? 'aman' : bookCondition
+
+  if (borrow.id_buku) {
+    const book = data.books.find(b => b.id === borrow.id_buku)
+    if (book) book.stok += 1
+  }
+
+  save(data)
+  return normalizeBorrow(borrow)
+}
+
+export async function deleteBorrow(id) {
+  const data = getData()
+  data.borrows = data.borrows.filter(b => b.id !== id)
+  save(data)
 }

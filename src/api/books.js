@@ -1,33 +1,4 @@
-import { get, post, put, del, unwrapList } from './index.js'
-
-export async function fetchBooks() {
-  const books = unwrapList(await get('/books'), ['books'])
-  return books.map(normalizeBook)
-}
-
-export async function searchBooks(query) {
-  const books = unwrapList(await get('/books'), ['books']).map(normalizeBook)
-  return searchLocalBooks(books, query)
-}
-
-export async function addBook(bookData) {
-  const payload = toBackendBook(bookData)
-
-  const res = await post('/books', payload)
-  const id = res?.id || res?.data?.id || null
-  return { ...normalizeBook(bookData), id }
-}
-
-export async function updateBook(id, bookData) {
-  const payload = toBackendBook(bookData)
-
-  await put(`/books/${id}`, payload)
-  return { ...normalizeBook(bookData), id }
-}
-
-export async function deleteBook(id) {
-  return await del(`/books/${id}`)
-}
+import { getData, save } from '@/data/store.js'
 
 export function normalizeBook(book = {}) {
   return {
@@ -45,25 +16,61 @@ export function normalizeBook(book = {}) {
   }
 }
 
-function searchLocalBooks(books, query) {
-  const keyword = query.toLowerCase()
-
-  return books.filter((book) => {
-    return [book.title, book.author, book.publisher, book.category]
-      .filter(Boolean)
-      .some((value) => value.toLowerCase().includes(keyword))
-  })
+export async function fetchBooks() {
+  return getData().books.map(normalizeBook)
 }
 
-function toBackendBook(book = {}) {
-  return {
-    judul: book.title || book.judul || '',
-    pengarang: book.author || book.pengarang || '',
-    penerbit: book.publisher || book.penerbit || '',
-    tahun_terbit: book.year || book.tahun_terbit || null,
-    kategori: book.category || book.kategori || '',
-    stok: book.stock ?? book.stok ?? 0,
-    pdf_file: book.pdf_url || book.pdf_file || null,
-    cover_url: book.cover_url || book.coverUrl || book.cover || null,
+export async function searchBooks(query) {
+  const books = await fetchBooks()
+  const keyword = query.toLowerCase()
+  return books.filter(b =>
+    [b.title, b.author, b.publisher, b.category]
+      .filter(Boolean)
+      .some(v => v.toLowerCase().includes(keyword))
+  )
+}
+
+export async function addBook(bookData) {
+  const data = getData()
+  const maxId = data.books.reduce((max, b) => Math.max(max, b.id || 0), 0)
+  const newBook = {
+    id: maxId + 1,
+    judul: bookData.title || bookData.judul || '',
+    pengarang: bookData.author || bookData.pengarang || '',
+    penerbit: bookData.publisher || bookData.penerbit || '',
+    tahun_terbit: bookData.year || bookData.tahun_terbit || null,
+    kategori: bookData.category || bookData.kategori || '',
+    stok: bookData.stock ?? bookData.stok ?? 0,
+    pdf_file: bookData.pdf_url || bookData.pdf_file || null,
+    cover_url: bookData.cover_url || null,
   }
+  data.books.push(newBook)
+  save(data)
+  return normalizeBook(newBook)
+}
+
+export async function updateBook(id, bookData) {
+  const data = getData()
+  const idx = data.books.findIndex(b => String(b.id) === String(id))
+  if (idx === -1) throw new Error('Buku tidak ditemukan')
+
+  data.books[idx] = {
+    ...data.books[idx],
+    judul: bookData.title || bookData.judul || data.books[idx].judul,
+    pengarang: bookData.author || bookData.pengarang || data.books[idx].pengarang,
+    penerbit: bookData.publisher || bookData.penerbit || data.books[idx].penerbit,
+    tahun_terbit: bookData.year || bookData.tahun_terbit || data.books[idx].tahun_terbit,
+    kategori: bookData.category || bookData.kategori || data.books[idx].kategori,
+    stok: bookData.stock ?? bookData.stok ?? data.books[idx].stok,
+    pdf_file: bookData.pdf_url || bookData.pdf_file || data.books[idx].pdf_file,
+    cover_url: bookData.cover_url || data.books[idx].cover_url,
+  }
+  save(data)
+  return normalizeBook(data.books[idx])
+}
+
+export async function deleteBook(id) {
+  const data = getData()
+  data.books = data.books.filter(b => String(b.id) !== String(id))
+  save(data)
 }
