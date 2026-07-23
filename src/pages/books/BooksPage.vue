@@ -2,27 +2,27 @@
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>Books</h1>
-        <p>Manage the library book catalog</p>
+        <h1>Buku</h1>
+        <p>Kelola katalog buku perpustakaan</p>
       </div>
       <div v-if="auth.isAdmin || auth.isPetugas" class="page-header-actions">
         <button class="btn btn-primary" type="button" @click="openCreate">
-          + Add Book
+          + Tambah Buku
         </button>
       </div>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Total Books</div>
+        <div class="stat-label">Total Buku</div>
         <div class="stat-value">{{ books.length }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Available</div>
+        <div class="stat-label">Tersedia</div>
         <div class="stat-value">{{ availableCount }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Total Stock</div>
+        <div class="stat-label">Total Stok</div>
         <div class="stat-value">{{ totalStock }}</div>
       </div>
     </div>
@@ -35,13 +35,13 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </span>
-        <input v-model="search" placeholder="Search by title, author, or category..." />
+        <input v-model="search" placeholder="Cari berdasarkan judul, penulis, atau kategori..." />
       </div>
       <select v-model="selectedCategory" class="filter-select">
-        <option value="">All Categories</option>
+        <option value="">Semua Kategori</option>
         <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
       </select>
-      <button class="btn btn-ghost btn-sm" type="button" @click="resetFilters">Reset</button>
+      <button class="btn btn-ghost btn-sm" type="button" @click="resetFilters">Atur Ulang</button>
     </div>
 
     <div v-if="loading" class="card-grid">
@@ -55,10 +55,10 @@
 
     <div v-else-if="!filteredBooks.length" class="empty-state">
       <div class="empty-icon">📚</div>
-      <h3>No books found</h3>
-      <p v-if="search || selectedCategory">Try adjusting your search or filters</p>
-      <p v-else>Add a book to get started</p>
-      <button v-if="search || selectedCategory" class="btn btn-ghost" type="button" @click="resetFilters">Clear Filters</button>
+      <h3>Buku tidak ditemukan</h3>
+      <p v-if="search || selectedCategory">Coba ubah pencarian atau filter Anda</p>
+      <p v-else>Tambahkan buku untuk memulai</p>
+      <button v-if="search || selectedCategory" class="btn btn-ghost" type="button" @click="resetFilters">Hapus Filter</button>
     </div>
 
     <div v-else class="card-grid">
@@ -68,17 +68,17 @@
           <div v-if="!book.cover_url" class="cover-fallback">{{ getInitial(book.title) }}</div>
         </div>
         <div class="book-card-body">
-          <div class="book-category">{{ book.category || 'General' }}</div>
+          <div class="book-category">{{ book.category || 'Umum' }}</div>
           <h3 class="book-title">{{ book.title }}</h3>
           <p class="book-author">{{ book.author }}</p>
           <div class="book-meta-row">
             <span>{{ book.year || '-' }}</span>
             <span :class="['badge', Number(book.stock) > 0 ? 'badge-success' : 'badge-danger']">
-              {{ book.stock }} in stock
+              {{ book.stock }} tersedia
             </span>
           </div>
           <div class="book-card-actions">
-            <button class="btn btn-ghost btn-sm" type="button" @click="openDetail(book)">Details</button>
+            <button class="btn btn-ghost btn-sm" type="button" @click="openDetail(book)">Detail</button>
             <button
               v-if="auth.isMember && Number(book.stock) > 0"
               class="btn btn-primary btn-sm"
@@ -86,11 +86,11 @@
               :disabled="borrowingId === book.id"
               @click="borrowBook(book)"
             >
-              {{ borrowingId === book.id ? '...' : 'Borrow' }}
+              {{ borrowingId === book.id ? '...' : 'Pinjam' }}
             </button>
             <template v-if="auth.isAdmin || auth.isPetugas">
               <button class="btn btn-ghost btn-sm" type="button" @click="openEdit(book)">Edit</button>
-              <button class="btn btn-danger btn-sm" type="button" @click="removeBook(book)">Delete</button>
+              <button class="btn btn-danger btn-sm" type="button" @click="removeBook(book)">Hapus</button>
             </template>
           </div>
         </div>
@@ -107,27 +107,27 @@
               <div v-if="!detailBook.cover_url" class="detail-cover-fallback">{{ getInitial(detailBook.title) }}</div>
             </div>
             <div class="detail-info">
-              <span class="badge badge-info">{{ detailBook.category || 'General' }}</span>
+              <span class="badge badge-info">{{ detailBook.category || 'Umum' }}</span>
               <h2>{{ detailBook.title }}</h2>
               <p class="detail-author-text">{{ detailBook.author }}</p>
 
               <div class="detail-fields">
                 <div class="detail-field">
-                  <span class="field-label">Publisher</span>
+                  <span class="field-label">Penerbit</span>
                   <span class="field-value">{{ detailBook.publisher || '-' }}</span>
                 </div>
                 <div class="detail-field">
-                  <span class="field-label">Year</span>
+                  <span class="field-label">Tahun</span>
                   <span class="field-value">{{ detailBook.year || '-' }}</span>
                 </div>
                 <div class="detail-field">
-                  <span class="field-label">Category</span>
-                  <span class="field-value">{{ detailBook.category || 'General' }}</span>
+                  <span class="field-label">Kategori</span>
+                  <span class="field-value">{{ detailBook.category || 'Umum' }}</span>
                 </div>
                 <div class="detail-field">
-                  <span class="field-label">Stock</span>
+                  <span class="field-label">Stok</span>
                   <span :class="['field-value', 'badge', Number(detailBook.stock) > 0 ? 'badge-success' : 'badge-danger']">
-                    {{ detailBook.stock }} available
+                    {{ detailBook.stock }} tersedia
                   </span>
                 </div>
               </div>
@@ -142,12 +142,12 @@
                   :disabled="borrowingId === detailBook.id"
                   @click="borrowBook(detailBook)"
                 >
-                  {{ borrowingId === detailBook.id ? 'Processing...' : 'Borrow Book' }}
+                  {{ borrowingId === detailBook.id ? 'Memproses...' : 'Pinjam Buku' }}
                 </button>
                 <button v-if="auth.isAdmin || auth.isPetugas" class="btn btn-primary" type="button" @click="openEditFromDetail">
-                  Edit Book
+                  Edit Buku
                 </button>
-                <button class="btn btn-ghost" type="button" @click="closeDetail">Close</button>
+                <button class="btn btn-ghost" type="button" @click="closeDetail">Tutup</button>
               </div>
             </div>
           </div>
@@ -159,43 +159,43 @@
       <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
         <div class="modal-box">
           <button class="modal-close" type="button" @click="closeForm">✕</button>
-          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">{{ editingBook ? 'Edit Book' : 'Add Book' }}</h2>
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">{{ editingBook ? 'Edit Buku' : 'Tambah Buku' }}</h2>
           <form @submit.prevent="saveBook">
             <div class="form-grid">
               <div class="form-group">
-                <label for="book-title">Title *</label>
-                <input id="book-title" v-model="form.title" required placeholder="Book title" />
+                <label for="book-title">Judul *</label>
+                <input id="book-title" v-model="form.title" required placeholder="Judul buku" />
               </div>
               <div class="form-group">
-                <label for="book-author">Author *</label>
-                <input id="book-author" v-model="form.author" required placeholder="Author name" />
+                <label for="book-author">Penulis *</label>
+                <input id="book-author" v-model="form.author" required placeholder="Nama penulis" />
               </div>
               <div class="form-group">
-                <label for="book-publisher">Publisher</label>
-                <input id="book-publisher" v-model="form.publisher" placeholder="Publisher" />
+                <label for="book-publisher">Penerbit</label>
+                <input id="book-publisher" v-model="form.publisher" placeholder="Penerbit" />
               </div>
               <div class="form-group">
-                <label for="book-year">Year</label>
+                <label for="book-year">Tahun</label>
                 <input id="book-year" v-model.number="form.year" type="number" min="1900" placeholder="2026" />
               </div>
               <div class="form-group">
-                <label for="book-stock">Stock *</label>
+                <label for="book-stock">Stok *</label>
                 <input id="book-stock" v-model.number="form.stock" type="number" min="0" required />
               </div>
               <div class="form-group">
-                <label for="book-category">Category</label>
-                <input id="book-category" v-model="form.category" placeholder="e.g. Novel, Technology" />
+                <label for="book-category">Kategori</label>
+                <input id="book-category" v-model="form.category" placeholder="cth. Novel, Teknologi" />
               </div>
               <div class="form-group span-2">
-                <label for="book-pdf">PDF File URL</label>
+                <label for="book-pdf">URL File PDF</label>
                 <input id="book-pdf" v-model="form.pdf_url" placeholder="filename.pdf" />
               </div>
               <div class="form-group span-2">
-                <label for="book-cover">Cover Image URL</label>
+                <label for="book-cover">URL Gambar Sampul</label>
                 <input id="book-cover" v-model="form.cover_url" placeholder="https://example.com/cover.jpg" />
               </div>
               <div class="form-group span-2" v-if="form.cover_url">
-                <label>Cover Preview</label>
+                <label>Pratinjau Sampul</label>
                 <div class="cover-preview-wrap">
                   <img :src="form.cover_url" alt="Cover preview" class="cover-preview-img" @error="coverPreviewError = true" />
                   <div v-if="coverPreviewError" class="cover-preview-fallback">{{ getInitial(form.title || 'B') }}</div>
@@ -204,9 +204,9 @@
             </div>
             <p v-if="formError" class="alert alert-error" style="margin-top: 12px;">{{ formError }}</p>
             <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-              <button class="btn btn-ghost" type="button" @click="closeForm">Cancel</button>
+              <button class="btn btn-ghost" type="button" @click="closeForm">Batal</button>
               <button class="btn btn-primary" type="submit" :disabled="saving">
-                {{ saving ? 'Saving...' : editingBook ? 'Update' : 'Add Book' }}
+                {{ saving ? 'Menyimpan...' : editingBook ? 'Perbarui' : 'Tambah Buku' }}
               </button>
             </div>
           </form>
@@ -433,15 +433,15 @@ async function confirmDelete() {
 }
 
 function friendlyError(msg) {
-  if (!msg) return 'An unexpected error occurred'
-  if (msg === 'INTERNAL_SERVER_ERROR') return 'Server error. Please try again later.'
-  if (msg === 'FORBIDDEN') return 'You do not have permission to perform this action.'
+  if (!msg) return 'Terjadi kesalahan yang tidak terduga'
+  if (msg === 'INTERNAL_SERVER_ERROR') return 'Kesalahan server. Silakan coba lagi nanti.'
+  if (msg === 'FORBIDDEN') return 'Anda tidak memiliki izin untuk melakukan tindakan ini.'
   return msg
 }
 
 async function borrowBook(book) {
   if (Number(book.stock) <= 0) {
-    detailError.value = 'Book is out of stock'
+    detailError.value = 'Buku sedang tidak tersedia'
     return
   }
   borrowingId.value = book.id
@@ -468,7 +468,7 @@ async function borrowBook(book) {
   } catch (err) {
     const msg = err.message || ''
     if (msg === 'BOOK_OUT_OF_STOCK') {
-      detailError.value = 'This book is currently out of stock'
+      detailError.value = 'Buku ini sedang tidak tersedia'
       toast.error('Buku sedang tidak tersedia')
     } else {
       detailError.value = friendlyError(msg)

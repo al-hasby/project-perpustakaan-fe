@@ -2,8 +2,8 @@
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>Profile</h1>
-        <p>Your account information</p>
+        <h1>Profil</h1>
+        <p>Informasi akun Anda</p>
       </div>
     </div>
 
@@ -18,19 +18,19 @@
 
       <div class="profile-details">
         <div class="detail-row">
-          <span class="detail-label">Username</span>
+          <span class="detail-label">Nama Pengguna</span>
           <span class="detail-value">{{ auth.user?.username || '-' }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Role</span>
+          <span class="detail-label">Peran</span>
           <span class="detail-value">{{ auth.role || '-' }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Account Type</span>
-          <span class="detail-value">{{ auth.isAdmin ? 'Administrator' : auth.isPetugas ? 'Staff' : 'Member' }}</span>
+          <span class="detail-label">Tipe Akun</span>
+          <span class="detail-value">{{ auth.isAdmin ? 'Administrator' : auth.isPetugas ? 'Petugas' : 'Anggota' }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">User ID</span>
+          <span class="detail-label">ID Pengguna</span>
           <span class="detail-value">{{ auth.user?.id || '-' }}</span>
         </div>
       </div>
@@ -42,16 +42,16 @@
             <polyline points="16 17 21 12 16 7"/>
             <line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
-          Logout
+          Keluar
         </button>
       </div>
     </div>
 
     <ConfirmModal
       v-model="showLogoutConfirm"
-      title="Logout?"
+      title="Keluar?"
       message="Apakah kamu yakin ingin keluar dari akun ini?"
-      confirm-text="Logout"
+      confirm-text="Keluar"
       cancel-text="Batal"
       type="danger"
       @confirm="handleLogout"
@@ -72,7 +72,7 @@ const auth = useAuthStore()
 const toast = useToastStore()
 const showLogoutConfirm = ref(false)
 
-const displayName = computed(() => auth.user?.username || auth.user?.name || 'User')
+const displayName = computed(() => auth.user?.username || auth.user?.name || 'Pengguna')
 
 const initials = computed(() => {
   const name = displayName.value

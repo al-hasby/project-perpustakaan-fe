@@ -53,7 +53,7 @@
 
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
-            <label for="username">Username</label>
+            <label for="username">Nama Pengguna</label>
             <div class="input-wrapper">
               <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <input id="username" v-model="form.username" type="text" placeholder="Masukkan username" required />
@@ -61,7 +61,7 @@
           </div>
 
           <div class="form-group">
-            <label for="password">Password</label>
+            <label for="password">Kata Sandi</label>
             <div class="input-wrapper">
               <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               <input id="password" v-model="form.password" type="password" placeholder="Masukkan password" required />
@@ -77,7 +77,7 @@
         </form>
 
         <div class="demo-accounts">
-          <p class="demo-label">Demo Accounts:</p>
+          <p class="demo-label">Akun Demo:</p>
           <div class="demo-chips">
             <button class="demo-chip" type="button" @click="fillDemo('admin', 'admin123')">
               <span class="chip-role admin">Admin</span>

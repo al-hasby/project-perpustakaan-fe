@@ -2,8 +2,8 @@
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>Reports</h1>
-        <p>Library analytics and borrowing reports</p>
+        <h1>Laporan</h1>
+        <p>Analitik perpustakaan dan laporan peminjaman</p>
       </div>
     </div>
 
@@ -16,30 +16,30 @@
 
     <div v-else-if="statsError" class="empty-state">
       <div class="empty-icon">⚠️</div>
-      <h3>Failed to load dashboard stats</h3>
+      <h3>Gagal memuat statistik dashboard</h3>
       <p>{{ statsError }}</p>
-      <button class="btn btn-primary" type="button" @click="loadDashboard">Retry</button>
+      <button class="btn btn-primary" type="button" @click="loadDashboard">Coba Lagi</button>
     </div>
 
     <div v-else class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Total Books</div>
+        <div class="stat-label">Total Buku</div>
         <div class="stat-value">{{ summary.total_books || 0 }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Total E-Books</div>
+        <div class="stat-label">Total E-Buku</div>
         <div class="stat-value">{{ summary.total_ebooks || 0 }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Borrowed</div>
+        <div class="stat-label">Dipinjam</div>
         <div class="stat-value">{{ summary.total_borrowed || 0 }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Returned</div>
+        <div class="stat-label">Dikembalikan</div>
         <div class="stat-value">{{ summary.total_returned || 0 }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Damaged</div>
+        <div class="stat-label">Rusak</div>
         <div class="stat-value">{{ summary.damaged || 0 }}</div>
       </div>
     </div>
@@ -64,15 +64,15 @@
 
     <div v-else-if="tableError" class="empty-state">
       <div class="empty-icon">⚠️</div>
-      <h3>Failed to load report data</h3>
+      <h3>Gagal memuat data laporan</h3>
       <p>{{ tableError }}</p>
-      <button class="btn btn-primary" type="button" @click="loadTable">Retry</button>
+      <button class="btn btn-primary" type="button" @click="loadTable">Coba Lagi</button>
     </div>
 
     <div v-else-if="!tableData.length" class="empty-state">
       <div class="empty-icon">📊</div>
-      <h3>No data</h3>
-      <p>No borrowing records match the selected filter</p>
+      <h3>Tidak ada data</h3>
+      <p>Tidak ada data peminjaman yang sesuai dengan filter</p>
     </div>
 
     <div v-else class="card" style="padding: 0; overflow: hidden;">
@@ -80,13 +80,13 @@
         <table>
           <thead>
             <tr>
-              <th>Book</th>
-              <th>Borrower</th>
-              <th>Borrow Date</th>
-              <th>Due Date</th>
-              <th>Returned At</th>
+              <th>Buku</th>
+              <th>Peminjam</th>
+              <th>Tanggal Pinjam</th>
+              <th>Jatuh Tempo</th>
+              <th>Dikembalikan Pada</th>
               <th>Status</th>
-              <th>Condition</th>
+              <th>Kondisi</th>
             </tr>
           </thead>
           <tbody>
@@ -128,18 +128,18 @@ const tableError = ref('')
 const activeFilter = ref('all')
 
 const filterTabs = [
-  { value: 'all', label: 'All' },
-  { value: 'keterlambatan', label: 'Overdue' },
-  { value: 'belum_kembali', label: 'Not Returned' },
-  { value: 'rusak', label: 'Damaged' },
+  { value: 'all', label: 'Semua' },
+  { value: 'keterlambatan', label: 'Terlambat' },
+  { value: 'belum_kembali', label: 'Belum Dikembalikan' },
+  { value: 'rusak', label: 'Rusak' },
 ]
 
 function statusLabel(status) {
-  if (status === 'dikembalikan') return 'Returned'
-  if (status === 'terlambat') return 'Overdue'
-  if (status === 'dipinjam') return 'Borrowed'
-  if (status === 'ditolak') return 'Rejected'
-  if (status === 'menunggu') return 'Pending'
+  if (status === 'dikembalikan') return 'Dikembalikan'
+  if (status === 'terlambat') return 'Terlambat'
+  if (status === 'dipinjam') return 'Dipinjam'
+  if (status === 'ditolak') return 'Ditolak'
+  if (status === 'menunggu') return 'Menunggu'
   return status || '-'
 }
 
@@ -153,9 +153,9 @@ function statusBadge(status) {
 }
 
 function conditionLabel(cond) {
-  if (cond === 'sedikit_rusak') return 'Slightly Damaged'
-  if (cond === 'rusak') return 'Damaged'
-  return 'Good'
+  if (cond === 'sedikit_rusak') return 'Sedikit Rusak'
+  if (cond === 'rusak') return 'Rusak'
+  return 'Aman'
 }
 
 function conditionBadge(cond) {
@@ -165,9 +165,9 @@ function conditionBadge(cond) {
 }
 
 function friendlyError(msg) {
-  if (!msg) return 'An unexpected error occurred'
-  if (msg === 'INTERNAL_SERVER_ERROR') return 'Server error. Please try again later.'
-  if (msg === 'FORBIDDEN') return 'You do not have permission to access this data.'
+  if (!msg) return 'Terjadi kesalahan yang tidak terduga'
+  if (msg === 'INTERNAL_SERVER_ERROR') return 'Kesalahan server. Silakan coba lagi nanti.'
+  if (msg === 'FORBIDDEN') return 'Anda tidak memiliki izin untuk mengakses data ini.'
   return msg
 }
 

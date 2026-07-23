@@ -2,12 +2,12 @@
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>{{ auth.isMember ? 'My Loans' : 'Borrowing' }}</h1>
-        <p>{{ auth.isMember ? 'Track your borrowed books and due dates' : 'Manage book loans and returns' }}</p>
+        <h1>{{ auth.isMember ? 'Peminjaman Saya' : 'Peminjaman' }}</h1>
+        <p>{{ auth.isMember ? 'Lacak buku yang dipinjam dan jatuh tempo' : 'Kelola peminjaman dan pengembalian buku' }}</p>
       </div>
       <div v-if="auth.isAdmin || auth.isPetugas" class="page-header-actions">
         <button class="btn btn-primary" type="button" @click="showAddModal = true">
-          + New Loan
+          + Peminjaman Baru
         </button>
       </div>
     </div>
@@ -18,15 +18,15 @@
         <div class="stat-value">{{ visibleBorrows.length }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Pending</div>
+        <div class="stat-label">Menunggu</div>
         <div class="stat-value">{{ pendingCount }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Active</div>
+        <div class="stat-label">Aktif</div>
         <div class="stat-value">{{ activeCount }}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Returned</div>
+        <div class="stat-label">Dikembalikan</div>
         <div class="stat-value">{{ returnedCount }}</div>
       </div>
     </div>
@@ -45,7 +45,7 @@
 
     <div v-if="error" class="alert alert-error" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
       <span style="flex:1">{{ error }}</span>
-      <button class="btn btn-ghost btn-sm" type="button" @click="loadData">Retry</button>
+      <button class="btn btn-ghost btn-sm" type="button" @click="loadData">Coba Lagi</button>
     </div>
 
     <div v-if="loading" class="card">
@@ -54,8 +54,8 @@
 
     <div v-else-if="!filteredBorrows.length" class="empty-state">
       <div class="empty-icon">📋</div>
-      <h3>No loans found</h3>
-      <p>{{ auth.isMember ? 'Browse books to borrow from the library' : 'No borrowing records match the selected filter' }}</p>
+      <h3>Peminjaman tidak ditemukan</h3>
+      <p>{{ auth.isMember ? 'Jelajahi buku untuk dipinjam dari perpustakaan' : 'Tidak ada data peminjaman yang sesuai dengan filter' }}</p>
     </div>
 
     <div v-else class="card" style="padding: 0; overflow: hidden;">
@@ -63,13 +63,13 @@
         <table>
           <thead>
             <tr>
-              <th>Book</th>
-              <th>Borrower</th>
-              <th>Borrow Date</th>
-              <th>Due Date</th>
-              <th>Condition</th>
+              <th>Buku</th>
+              <th>Peminjam</th>
+              <th>Tanggal Pinjam</th>
+              <th>Jatuh Tempo</th>
+              <th>Kondisi</th>
               <th>Status</th>
-              <th v-if="showActions">Actions</th>
+              <th v-if="showActions">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +95,7 @@
                   type="button"
                   @click="handleApprove(borrow)"
                 >
-                  Approve
+                  Setujui
                 </button>
                 <button
                   v-if="canReject(borrow)"
@@ -103,7 +103,7 @@
                   type="button"
                   @click="handleReject(borrow)"
                 >
-                  Reject
+                  Tolak
                 </button>
                 <button
                   v-if="canReturnAction(borrow)"
@@ -111,7 +111,7 @@
                   type="button"
                   @click="openReturnModal(borrow)"
                 >
-                  Return
+                  Kembalikan
                 </button>
               </td>
             </tr>
@@ -124,48 +124,48 @@
       <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
         <div class="modal-box">
           <button class="modal-close" type="button" @click="showAddModal = false">✕</button>
-          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">New Loan</h2>
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">Peminjaman Baru</h2>
           <form @submit.prevent="submitNewLoan">
             <div class="form-grid">
               <div class="form-group span-2">
-                <label for="loan-book">Book *</label>
+                <label for="loan-book">Buku *</label>
                 <select id="loan-book" v-model="newLoan.book_id" required>
-                  <option value="" disabled>Select a book</option>
+                  <option value="" disabled>Pilih buku</option>
                   <option v-for="book in availableBooks" :key="book.id" :value="book.id">
-                    {{ book.title }} ({{ book.stock }} in stock)
+                    {{ book.title }} ({{ book.stock }} stok)
                   </option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="loan-borrower">Borrower Name *</label>
-                <input id="loan-borrower" v-model="newLoan.borrower_name" required placeholder="Name" />
+                <label for="loan-borrower">Nama Peminjam *</label>
+                <input id="loan-borrower" v-model="newLoan.borrower_name" required placeholder="Nama" />
               </div>
               <div class="form-group">
-                <label for="loan-member-id">Member ID</label>
-                <input id="loan-member-id" v-model="newLoan.member_id" type="number" placeholder="Optional" />
+                <label for="loan-member-id">ID Anggota</label>
+                <input id="loan-member-id" v-model="newLoan.member_id" type="number" placeholder="Opsional" />
               </div>
               <div class="form-group">
-                <label for="loan-date">Borrow Date *</label>
+                <label for="loan-date">Tanggal Pinjam *</label>
                 <input id="loan-date" v-model="newLoan.tanggal_pinjam" type="date" required />
               </div>
               <div class="form-group">
-                <label for="loan-due">Due Date *</label>
+                <label for="loan-due">Jatuh Tempo *</label>
                 <input id="loan-due" v-model="newLoan.tanggal_kembali" type="date" required />
               </div>
               <div class="form-group span-2">
-                <label for="loan-condition">Book Condition</label>
+                <label for="loan-condition">Kondisi Buku</label>
                 <select id="loan-condition" v-model="newLoan.kondisi_buku">
-                  <option value="aman">Good</option>
-                  <option value="sedikit_rusak">Slightly Damaged</option>
-                  <option value="rusak">Damaged</option>
+                  <option value="aman">Aman</option>
+                  <option value="sedikit_rusak">Sedikit Rusak</option>
+                  <option value="rusak">Rusak</option>
                 </select>
               </div>
             </div>
             <p v-if="loanError" class="alert alert-error" style="margin-top: 12px;">{{ loanError }}</p>
             <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
-              <button class="btn btn-ghost" type="button" @click="showAddModal = false">Cancel</button>
+              <button class="btn btn-ghost" type="button" @click="showAddModal = false">Batal</button>
               <button class="btn btn-primary" type="submit" :disabled="saving">
-                {{ saving ? 'Saving...' : 'Create Loan' }}
+                {{ saving ? 'Menyimpan...' : 'Buat Peminjaman' }}
               </button>
             </div>
           </form>
@@ -177,28 +177,28 @@
       <div v-if="returnBook" class="modal-overlay" @click.self="closeReturnModal">
         <div class="modal-box">
           <button class="modal-close" type="button" @click="closeReturnModal">✕</button>
-          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">Return Book</h2>
+          <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">Kembalikan Buku</h2>
           <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px;">
             {{ returnBook.book_title || returnBook.book_id }} — {{ returnBook.borrower_name }}
           </p>
           <form @submit.prevent="submitReturn">
             <div class="form-group" style="margin-bottom: 16px;">
-              <label for="return-date">Return Date *</label>
+              <label for="return-date">Tanggal Kembali *</label>
               <input id="return-date" v-model="returnPayload.dikembalikan_pada" type="date" required />
             </div>
             <div class="form-group" style="margin-bottom: 16px;">
-              <label for="return-condition">Book Condition *</label>
+              <label for="return-condition">Kondisi Buku *</label>
               <select id="return-condition" v-model="returnPayload.kondisi_buku" required>
-                <option value="aman">Good</option>
-                <option value="sedikit_rusak">Slightly Damaged</option>
-                <option value="rusak">Damaged</option>
+                <option value="aman">Aman</option>
+                <option value="sedikit_rusak">Sedikit Rusak</option>
+                <option value="rusak">Rusak</option>
               </select>
             </div>
             <p v-if="returnError" class="alert alert-error" style="margin-bottom: 12px;">{{ returnError }}</p>
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
-              <button class="btn btn-ghost" type="button" @click="closeReturnModal">Cancel</button>
+              <button class="btn btn-ghost" type="button" @click="closeReturnModal">Batal</button>
               <button class="btn btn-primary" type="submit" :disabled="saving">
-                {{ saving ? 'Processing...' : 'Confirm Return' }}
+                {{ saving ? 'Memproses...' : 'Konfirmasi Pengembalian' }}
               </button>
             </div>
           </form>
@@ -246,11 +246,11 @@ const returnPayload = reactive({
 })
 
 const filterOptions = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'active', label: 'Active' },
-  { value: 'returned', label: 'Returned' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'all', label: 'Semua' },
+  { value: 'pending', label: 'Menunggu' },
+  { value: 'active', label: 'Aktif' },
+  { value: 'returned', label: 'Dikembalikan' },
+  { value: 'rejected', label: 'Ditolak' },
 ]
 
 const visibleBorrows = computed(() => borrows.value)
@@ -279,11 +279,11 @@ const showActions = computed(() => auth.isAdmin || auth.isPetugas)
 const availableBooks = computed(() => books.value.filter(b => Number(b.stock) > 0))
 
 function statusLabel(borrow) {
-  if (borrow.returned_at || borrow.status === 'dikembalikan') return 'Returned'
-  if (borrow.approval_status === 'pending') return 'Pending'
-  if (borrow.approval_status === 'rejected') return 'Rejected'
-  if (borrow.status === 'terlambat') return 'Overdue'
-  return 'Borrowed'
+  if (borrow.returned_at || borrow.status === 'dikembalikan') return 'Dikembalikan'
+  if (borrow.approval_status === 'pending') return 'Menunggu'
+  if (borrow.approval_status === 'rejected') return 'Ditolak'
+  if (borrow.status === 'terlambat') return 'Terlambat'
+  return 'Dipinjam'
 }
 
 function statusBadgeClass(borrow) {
@@ -301,9 +301,9 @@ function conditionClass(cond) {
 }
 
 function conditionLabel(cond) {
-  if (cond === 'sedikit_rusak') return 'Slightly Damaged'
-  if (cond === 'rusak') return 'Damaged'
-  return 'Good'
+  if (cond === 'sedikit_rusak') return 'Sedikit Rusak'
+  if (cond === 'rusak') return 'Rusak'
+  return 'Aman'
 }
 
 function canApprove(borrow) {
@@ -319,10 +319,10 @@ function canReturnAction(borrow) {
 }
 
 function friendlyError(msg) {
-  if (!msg) return 'An unexpected error occurred'
-  if (msg === 'INTERNAL_SERVER_ERROR') return 'Server error. Please try again later.'
-  if (msg === 'TOKEN_REQUIRED' || msg === 'INVALID_TOKEN' || msg === 'UNAUTHENTICATED') return 'Session expired. Please log in again.'
-  if (msg === 'FORBIDDEN') return 'You do not have permission to access this data.'
+  if (!msg) return 'Terjadi kesalahan yang tidak terduga'
+  if (msg === 'INTERNAL_SERVER_ERROR') return 'Kesalahan server. Silakan coba lagi nanti.'
+  if (msg === 'TOKEN_REQUIRED' || msg === 'INVALID_TOKEN' || msg === 'UNAUTHENTICATED') return 'Sesi telah berakhir. Silakan masuk kembali.'
+  if (msg === 'FORBIDDEN') return 'Anda tidak memiliki izin untuk mengakses data ini.'
   return msg
 }
 
@@ -362,9 +362,9 @@ async function loadData() {
       const errMsg = results[0].reason?.message
       console.log('[BorrowPage] fetchBorrows error:', results[0].reason)
       if (errMsg === 'Cannot connect to server') {
-        error.value = 'Cannot connect to server'
+        error.value = 'Tidak dapat terhubung ke server'
       } else if (errMsg === 'FORBIDDEN') {
-        error.value = 'You don\'t have permission to access this data.'
+        error.value = 'Anda tidak memiliki izin untuk mengakses data ini.'
       } else {
         error.value = friendlyError(errMsg)
       }

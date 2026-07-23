@@ -2,7 +2,7 @@
   <div class="panel pdf-viewer">
     <div class="viewer-header">
       <div>
-        <p class="eyebrow">PDF Viewer</p>
+        <p class="eyebrow">Penampil PDF</p>
         <h2>{{ title || 'Pilih buku digital' }}</h2>
       </div>
       <a v-if="src" class="btn ghost" :href="src" target="_blank" rel="noreferrer">Buka Tab Baru</a>

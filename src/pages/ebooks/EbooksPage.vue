@@ -2,8 +2,8 @@
   <div class="page">
     <div class="page-header">
       <div>
-        <h1>E-Books</h1>
-        <p>Browse and read digital books online</p>
+        <h1>E-Buku</h1>
+        <p>Jelajahi dan baca buku digital secara online</p>
       </div>
     </div>
 
@@ -17,15 +17,15 @@
 
     <div v-else-if="error" class="empty-state">
       <div class="empty-icon">⚠️</div>
-      <h3>Failed to load e-books</h3>
+      <h3>Gagal memuat e-buku</h3>
       <p>{{ error }}</p>
-      <button class="btn btn-primary" type="button" @click="loadEbooks">Retry</button>
+      <button class="btn btn-primary" type="button" @click="loadEbooks">Coba Lagi</button>
     </div>
 
     <div v-else-if="!ebooks.length" class="empty-state">
       <div class="empty-icon">📖</div>
-      <h3>No e-books available</h3>
-      <p>Digital books have not been added yet</p>
+      <h3>Tidak ada e-buku tersedia</h3>
+      <p>Buku digital belum ditambahkan</p>
     </div>
 
     <div v-else class="card-grid">
@@ -39,7 +39,7 @@
           </svg>
         </div>
         <div class="ebook-body">
-          <span class="badge badge-info ebook-category">{{ book.category || 'General' }}</span>
+          <span class="badge badge-info ebook-category">{{ book.category || 'Umum' }}</span>
           <h3 class="ebook-title">{{ book.title }}</h3>
           <p class="ebook-author">{{ book.author }}</p>
           <span class="ebook-year">{{ book.year || '-' }}</span>
@@ -56,8 +56,8 @@
               <p>{{ selectedBook.author }}</p>
             </div>
             <div class="reader-actions">
-              <a v-if="pdfSrc" class="btn btn-ghost btn-sm" :href="pdfSrc" target="_blank" rel="noreferrer">Open in new tab</a>
-              <button class="btn btn-ghost btn-sm" type="button" @click="closeReader">Close</button>
+              <a v-if="pdfSrc" class="btn btn-ghost btn-sm" :href="pdfSrc" target="_blank" rel="noreferrer">Buka di tab baru</a>
+              <button class="btn btn-ghost btn-sm" type="button" @click="closeReader">Tutup</button>
             </div>
           </div>
           <div v-if="pdfLoading" class="reader-loading">
@@ -65,7 +65,7 @@
           </div>
           <iframe v-else-if="pdfSrc" :src="pdfSrc" class="reader-iframe" title="PDF Viewer"></iframe>
           <div v-else class="reader-empty">
-            <p>PDF not available for this e-book</p>
+            <p>PDF tidak tersedia untuk e-buku ini</p>
           </div>
         </div>
       </div>
@@ -86,9 +86,9 @@ const pdfSrc = ref('')
 const pdfLoading = ref(false)
 
 function friendlyError(msg) {
-  if (!msg) return 'An unexpected error occurred'
-  if (msg === 'INTERNAL_SERVER_ERROR') return 'Server error. Please try again later.'
-  if (msg === 'FORBIDDEN') return 'You do not have permission to access this data.'
+  if (!msg) return 'Terjadi kesalahan yang tidak terduga'
+  if (msg === 'INTERNAL_SERVER_ERROR') return 'Kesalahan server. Silakan coba lagi nanti.'
+  if (msg === 'FORBIDDEN') return 'Anda tidak memiliki izin untuk mengakses data ini.'
   return msg
 }
 

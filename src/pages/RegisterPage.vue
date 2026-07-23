@@ -6,24 +6,24 @@
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
         </svg>
-        <h1>Create Account</h1>
-        <p>Register to access the library system</p>
+        <h1>Buat Akun</h1>
+        <p>Daftar untuk mengakses sistem perpustakaan</p>
       </div>
 
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input id="username" v-model="form.username" type="text" placeholder="Choose a username" required />
+          <label for="username">Nama Pengguna</label>
+          <input id="username" v-model="form.username" type="text" placeholder="Pilih nama pengguna" required />
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
-          <input id="password" v-model="form.password" type="password" placeholder="Create a password" required minlength="6" />
+          <label for="password">Kata Sandi</label>
+          <input id="password" v-model="form.password" type="password" placeholder="Buat kata sandi" required minlength="6" />
         </div>
 
         <div class="form-group">
-          <label for="confirmPassword">Confirm Password</label>
-          <input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="Confirm your password" required />
+          <label for="confirmPassword">Konfirmasi Kata Sandi</label>
+          <input id="confirmPassword" v-model="confirmPassword" type="password" placeholder="Konfirmasi kata sandi Anda" required />
           <span v-if="passwordError" class="field-error">{{ passwordError }}</span>
         </div>
 
@@ -31,12 +31,12 @@
 
         <button class="btn btn-primary btn-full" type="submit" :disabled="loading">
           <span v-if="loading" class="spinner"></span>
-          {{ loading ? 'Creating account...' : 'Register' }}
+          {{ loading ? 'Membuat akun...' : 'Daftar' }}
         </button>
       </form>
 
       <p class="auth-footer">
-        Already have an account? <RouterLink to="/login">Sign in</RouterLink>
+        Sudah punya akun? <RouterLink to="/login">Masuk</RouterLink>
       </p>
     </div>
   </div>
@@ -60,7 +60,7 @@ const form = reactive({
 
 const passwordError = computed(() => {
   if (confirmPassword.value && form.password !== confirmPassword.value) {
-    return 'Passwords do not match'
+    return 'Kata sandi tidak cocok'
   }
   return ''
 })
@@ -69,12 +69,12 @@ async function handleSubmit() {
   error.value = ''
 
   if (form.password !== confirmPassword.value) {
-    error.value = 'Passwords do not match'
+    error.value = 'Kata sandi tidak cocok'
     return
   }
 
   if (form.password.length < 6) {
-    error.value = 'Password must be at least 6 characters'
+    error.value = 'Kata sandi minimal 6 karakter'
     return
   }
 
@@ -92,9 +92,9 @@ async function handleSubmit() {
   } catch (err) {
     const msg = err.message || ''
     if (msg.includes('already') || msg.includes('exists') || msg.includes('duplicate')) {
-      error.value = 'Username already taken'
+      error.value = 'Nama pengguna sudah digunakan'
     } else {
-      error.value = 'Registration failed. Please try again later.'
+      error.value = 'Pendaftaran gagal. Silakan coba lagi nanti.'
     }
   } finally {
     loading.value = false
