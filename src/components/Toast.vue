@@ -1,14 +1,14 @@
 <template>
   <div class="toast-container">
-    <TransitionGroup name="toast">
+    <TransitionGroup tag="div" name="toast" class="toast-list">
       <div
-        v-for="toast in toasts"
-        :key="toast.id"
-        :class="['toast-item', 'toast-' + toast.type]"
+        v-for="t in toastStore.toasts"
+        :key="t.id"
+        :class="['toast-item', 'toast-' + t.type]"
       >
-        <div class="toast-icon" v-html="iconFor(toast.type)"></div>
-        <span class="toast-message">{{ toast.message }}</span>
-        <button class="toast-close" @click="remove(toast.id)">&times;</button>
+        <div class="toast-icon" v-html="iconFor(t.type)"></div>
+        <span class="toast-message">{{ t.message }}</span>
+        <button class="toast-close" @click="toastStore.remove(t.id)">&times;</button>
       </div>
     </TransitionGroup>
   </div>
@@ -17,7 +17,7 @@
 <script setup>
 import { useToastStore } from '@/stores/toast.js'
 
-const { toasts, remove } = useToastStore()
+const toastStore = useToastStore()
 
 function iconFor(type) {
   if (type === 'success') {
@@ -39,11 +39,14 @@ function iconFor(type) {
   top: 20px;
   right: 20px;
   z-index: 9999;
+  max-width: 380px;
+}
+
+.toast-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 380px;
-  pointer-events: none;
 }
 
 .toast-item {
@@ -55,7 +58,6 @@ function iconFor(type) {
   box-shadow: var(--shadow-lg);
   font-size: 13px;
   font-weight: 500;
-  pointer-events: all;
   border: 1px solid transparent;
   backdrop-filter: blur(8px);
 }
@@ -84,6 +86,7 @@ function iconFor(type) {
   display: grid;
   place-items: center;
   border-radius: 4px;
+  color: inherit;
 }
 
 .toast-close:hover {
@@ -139,6 +142,9 @@ function iconFor(type) {
 
 .toast-leave-active {
   animation: toastSlideOut 0.25s ease forwards;
+  position: absolute;
+  right: 0;
+  left: 0;
 }
 
 @keyframes toastSlideIn {
