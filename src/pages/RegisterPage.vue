@@ -46,8 +46,10 @@
 import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/api/auth.js'
+import { useToastStore } from '@/stores/toast.js'
 
 const router = useRouter()
+const toast = useToastStore()
 const loading = ref(false)
 const error = ref('')
 const confirmPassword = ref('')
@@ -85,6 +87,7 @@ async function handleSubmit() {
       password: form.password,
       role: 'member',
     })
+    toast.success('Akun berhasil dibuat! Selamat datang!')
     router.push('/home')
   } catch (err) {
     const msg = err.message || ''

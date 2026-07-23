@@ -44,6 +44,8 @@
       </div>
     </div>
 
+    <ReportCharts v-if="!statsLoading && !statsError" />
+
     <div class="filter-bar">
       <button
         v-for="tab in filterTabs"
@@ -115,6 +117,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { fetchReports, fetchBorrowReport } from '@/api/report.js'
+import ReportCharts from '@/components/report/ReportCharts.vue'
 
 const summary = ref({})
 const statsLoading = ref(true)

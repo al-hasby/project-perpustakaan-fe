@@ -213,6 +213,16 @@
         </div>
       </div>
     </Teleport>
+
+    <ConfirmModal
+      v-model="showDeleteConfirm"
+      title="Hapus Buku?"
+      :message="deleteConfirmMessage"
+      confirm-text="Hapus"
+      cancel-text="Batal"
+      type="danger"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -221,8 +231,11 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchBooks, addBook, updateBook, deleteBook } from '@/api/books.js'
 import { createBorrow } from '@/api/borrow.js'
 import { useAuthStore } from '@/stores/auth.js'
+import { useToastStore } from '@/stores/toast.js'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 const books = ref([])
 const search = ref('')
 const selectedCategory = ref('')
@@ -235,6 +248,12 @@ const editingBook = ref(null)
 const saving = ref(false)
 const formError = ref('')
 const coverPreviewError = ref(false)
+const showDeleteConfirm = ref(false)
+const deleteTarget = ref(null)
+const deleteConfirmMessage = computed(() => {
+  if (!deleteTarget.value) return ''
+  return `Buku "${deleteTarget.value.title}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`
+})
 
 const form = reactive({
   title: '',
@@ -374,6 +393,7 @@ async function saveBook() {
     if (editingBook.value?.id) {
       await updateBook(editingBook.value.id, { ...form })
       persistCover(editingBook.value.id, form.cover_url)
+      toast.success('Buku berhasil diperbarui')
     } else {
       const saved = await addBook({ ...form })
       if (saved?.id) {
@@ -381,24 +401,34 @@ async function saveBook() {
       } else if (form.title) {
         persistCover(form.title, form.cover_url)
       }
+      toast.success('Buku berhasil ditambahkan')
     }
     closeForm()
     await loadBooks()
   } catch (err) {
     formError.value = friendlyError(err.message)
+    toast.error(friendlyError(err.message))
   } finally {
     saving.value = false
   }
 }
 
-async function removeBook(book) {
-  if (!confirm(`Delete "${book.title}"?`)) return
+function removeBook(book) {
+  deleteTarget.value = book
+  showDeleteConfirm.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
   try {
-    await deleteBook(book.id)
-    removeCover(book.id)
+    await deleteBook(deleteTarget.value.id)
+    removeCover(deleteTarget.value.id)
+    showDeleteConfirm.value = false
+    deleteTarget.value = null
     await loadBooks()
+    toast.success('Buku berhasil dihapus')
   } catch (err) {
-    console.error(err)
+    toast.error('Gagal menghapus buku: ' + friendlyError(err.message))
   }
 }
 
@@ -430,6 +460,7 @@ async function borrowBook(book) {
       kondisi_buku: 'aman',
       member_id: auth.user?.id || null,
     })
+    toast.success('Buku berhasil dipinjam! Menunggu persetujuan admin.')
     await loadBooks()
     if (detailBook.value) {
       detailBook.value = books.value.find(b => String(b.id) === String(book.id)) || null
@@ -438,8 +469,10 @@ async function borrowBook(book) {
     const msg = err.message || ''
     if (msg === 'BOOK_OUT_OF_STOCK') {
       detailError.value = 'This book is currently out of stock'
+      toast.error('Buku sedang tidak tersedia')
     } else {
       detailError.value = friendlyError(msg)
+      toast.error(friendlyError(msg))
     }
   } finally {
     borrowingId.value = null

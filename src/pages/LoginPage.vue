@@ -103,8 +103,10 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth.js'
+import { useToastStore } from '@/stores/toast.js'
 
 const router = useRouter()
+const toast = useToastStore()
 const loading = ref(false)
 const error = ref('')
 const form = reactive({
@@ -123,6 +125,7 @@ async function handleSubmit() {
 
   try {
     await login(form)
+    toast.success('Selamat datang kembali!')
     router.push('/home')
   } catch (err) {
     const msg = err.message || ''

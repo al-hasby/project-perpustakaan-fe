@@ -36,7 +36,7 @@
       </div>
 
       <div class="profile-actions">
-        <button class="btn btn-danger" type="button" @click="handleLogout">
+        <button class="btn btn-danger" type="button" @click="showLogoutConfirm = true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
@@ -46,17 +46,31 @@
         </button>
       </div>
     </div>
+
+    <ConfirmModal
+      v-model="showLogoutConfirm"
+      title="Logout?"
+      message="Apakah kamu yakin ingin keluar dari akun ini?"
+      confirm-text="Logout"
+      cancel-text="Batal"
+      type="danger"
+      @confirm="handleLogout"
+    />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '@/api/auth.js'
 import { useAuthStore } from '@/stores/auth.js'
+import { useToastStore } from '@/stores/toast.js'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const toast = useToastStore()
+const showLogoutConfirm = ref(false)
 
 const displayName = computed(() => auth.user?.username || auth.user?.name || 'User')
 
@@ -72,8 +86,14 @@ const roleBadgeClass = computed(() => {
 })
 
 async function handleLogout() {
-  await logout()
-  router.push('/login')
+  try {
+    await logout()
+    toast.success('Berhasil logout. Sampai jumpa!')
+    router.push('/login')
+  } catch {
+    auth.clearAuth()
+    router.push('/login')
+  }
 }
 </script>
 

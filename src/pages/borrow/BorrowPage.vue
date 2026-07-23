@@ -213,8 +213,10 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { fetchBooks } from '@/api/books.js'
 import { createBorrow, fetchBorrows, approveBorrow, rejectBorrow, returnBorrow } from '@/api/borrow.js'
 import { useAuthStore } from '@/stores/auth.js'
+import { useToastStore } from '@/stores/toast.js'
 
 const auth = useAuthStore()
+const toast = useToastStore()
 const borrows = ref([])
 const books = ref([])
 const loading = ref(true)
@@ -388,9 +390,11 @@ async function submitNewLoan() {
       member_id: newLoan.member_id || null,
     })
     showAddModal.value = false
+    toast.success('Peminjaman berhasil dibuat')
     await loadData()
   } catch (err) {
     loanError.value = friendlyError(err.message)
+    toast.error(friendlyError(err.message))
   } finally {
     saving.value = false
   }
@@ -399,9 +403,11 @@ async function submitNewLoan() {
 async function handleApprove(borrow) {
   try {
     await approveBorrow(borrow.id, borrow.book_condition || 'aman')
+    toast.success('Peminjaman disetujui')
     await loadData()
   } catch (err) {
     error.value = friendlyError(err.message)
+    toast.error(friendlyError(err.message))
     setTimeout(() => { error.value = '' }, 3000)
   }
 }
@@ -409,9 +415,11 @@ async function handleApprove(borrow) {
 async function handleReject(borrow) {
   try {
     await rejectBorrow(borrow.id)
+    toast.warning('Peminjaman ditolak')
     await loadData()
   } catch (err) {
     error.value = friendlyError(err.message)
+    toast.error(friendlyError(err.message))
     setTimeout(() => { error.value = '' }, 3000)
   }
 }
@@ -439,9 +447,11 @@ async function submitReturn() {
       returnPayload.kondisi_buku,
     )
     closeReturnModal()
+    toast.success('Buku berhasil dikembalikan')
     await loadData()
   } catch (err) {
     returnError.value = friendlyError(err.message)
+    toast.error(friendlyError(err.message))
   } finally {
     saving.value = false
   }

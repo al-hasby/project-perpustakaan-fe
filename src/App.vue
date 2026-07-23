@@ -16,6 +16,8 @@
     <main :class="['main-content', { 'with-sidebar': showSidebar }]">
       <router-view />
     </main>
+    <ChatBot />
+    <Toast />
   </div>
 </template>
 
@@ -24,6 +26,8 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 import Navbar from '@/components/Navbar.vue'
+import ChatBot from '@/components/ChatBot.vue'
+import Toast from '@/components/Toast.vue'
 
 const route = useRoute()
 const auth = useAuthStore()

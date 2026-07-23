@@ -11,7 +11,7 @@
         <line x1="9" y1="12" x2="15" y2="12"/>
         <line x1="9" y1="16" x2="12" y2="16"/>
       </svg>
-      <span class="brand-text">Perpustakaan</span>
+      <span class="brand-text">SMARTEDU</span>
     </div>
 
     <nav class="sidebar-nav">
